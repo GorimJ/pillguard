@@ -17,9 +17,17 @@ object AlarmScheduler {
     const val EXTRA_TITLE = "title"
     const val EXTRA_TEXT = "text"
 
+    const val ACTION_ALERT = "uk.gorim.pillguard.ALERT"
     private const val RC_DOSE = 100
     private const val RC_INFO_OPEN = 101
     private const val RC_INFO_CLOSE = 102
+    private const val RC_ALERT = 105
+
+    private fun alertPi(ctx: Context, key: String?): PendingIntent {
+        val i = Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_ALERT)
+        if (key != null) i.putExtra(EXTRA_KEY, key)
+        return PendingIntent.getBroadcast(ctx, RC_ALERT, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
 
     fun canExact(ctx: Context): Boolean {
         val am = ctx.getSystemService(AlarmManager::class.java)
@@ -72,10 +80,21 @@ object AlarmScheduler {
             next != null -> setExact(am, ctx, next.effectiveMillis, dosePi(ctx, next.key))
         }
 
+        val s = store.settings
+
+        // Carer alert if the current/next dose is still unconfirmed N minutes after it was due.
+        am.cancel(alertPi(ctx, null))
+        if (s.alertsEnabled && s.alertTopic.isNotEmpty()) {
+            val target = due ?: next
+            if (target != null && store.records[target.key]?.alerted != true) {
+                val at = target.effectiveMillis + s.alertAfterMin * 60_000L
+                setInexact(am, maxOf(at, now + 1000), alertPi(ctx, target.key))
+            }
+        }
+
         // Eating-window reminders.
         am.cancel(infoPi(ctx, RC_INFO_OPEN, null, null))
         am.cancel(infoPi(ctx, RC_INFO_CLOSE, null, null))
-        val s = store.settings
         val last = engine.lastTaken(now)
         if (last != null) {
             val opens = last.takenAt + s.eatAfterMin * 60_000L

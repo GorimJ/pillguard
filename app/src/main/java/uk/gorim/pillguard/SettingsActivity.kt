@@ -1,6 +1,7 @@
 package uk.gorim.pillguard
 
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.Button
@@ -10,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 
 class SettingsActivity : AppCompatActivity() {
     private val doses = ArrayList<DoseTime>()
@@ -46,7 +48,33 @@ class SettingsActivity : AppCompatActivity() {
                 .setNegativeButton("Cancel", null).show()
         }
         findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
+
+        // Carer alerts
+        if (s.alertTopic.isEmpty()) store.settings = s.copy(alertTopic = Alerts.newTopic())
+        findViewById<MaterialSwitch>(R.id.alertsEnabled).isChecked = s.alertsEnabled
+        num(R.id.alertAfter).setText(s.alertAfterMin.toString())
+        renderTopic()
+        findViewById<Button>(R.id.btnShareTopic).setOnClickListener {
+            val url = Alerts.topicUrl(store.settings.alertTopic)
+            startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).setType("text/plain")
+                        .putExtra(Intent.EXTRA_SUBJECT, "PillGuard alerts")
+                        .putExtra(Intent.EXTRA_TEXT, "Install the ntfy app, then open this link (or subscribe to the topic) to get PillGuard alerts: $url"),
+                    "Share alert topic"
+                )
+            )
+        }
+        findViewById<Button>(R.id.btnTestAlert).setOnClickListener {
+            Alerts.send(this, "PillGuard test", "Alerts are working.", 3) { ok ->
+                runOnUiThread { Ui.toast(this, if (ok) "Test alert sent." else "Sending failed — check the phone's internet connection.") }
+            }
+        }
         renderDoses()
+    }
+
+    private fun renderTopic() {
+        findViewById<TextView>(R.id.alertTopic).text = "Topic: ${store.settings.alertTopic}\n${Alerts.topicUrl(store.settings.alertTopic)}"
     }
 
     private fun num(id: Int) = findViewById<EditText>(id)
@@ -105,6 +133,8 @@ class SettingsActivity : AppCompatActivity() {
             snoozeMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.snoozeMin,
             ringTimeoutMin = num(R.id.ringTimeout).text.toString().toIntOrNull()?.coerceIn(1, 30) ?: s.ringTimeoutMin,
             pin = if (pinText.isEmpty()) s.pin else pinText,
+            alertsEnabled = findViewById<MaterialSwitch>(R.id.alertsEnabled).isChecked,
+            alertAfterMin = num(R.id.alertAfter).text.toString().toIntOrNull()?.coerceIn(1, 240) ?: s.alertAfterMin,
         )
         store.settings = next
         store.log("Settings changed")

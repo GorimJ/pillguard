@@ -80,6 +80,52 @@
             android:textAllCaps="false"
             android:text="Generate a new QR code (old one stops working)" />
 
+        <TextView style="@style/SettingsHeader" android:text="Carer alerts" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="Sends a push notification to the carer's phone if a dose is still unconfirmed after the delay below. Install the free ntfy app on the carer's phone and subscribe to the topic shown." />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Alerts on" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/alertsEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Alert after (minutes past due)" />
+            <EditText android:id="@+id/alertAfter" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/alertTopic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:textIsSelectable="true"
+            android:fontFamily="monospace"
+            android:text="" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnShareTopic"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Share topic link" />
+            <Button
+                android:id="@+id/btnTestAlert"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textAllCaps="false"
+                android:text="Send test alert" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/btnSave"
             style="@style/BigButton"

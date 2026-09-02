@@ -24,6 +24,13 @@ class AlarmReceiver : BroadcastReceiver() {
                     ctx, Intent(ctx, AlarmService::class.java).setAction(AlarmService.ACTION_START).putExtra(AlarmScheduler.EXTRA_KEY, key)
                 )
             }
+            action == AlarmScheduler.ACTION_ALERT -> {
+                val key = intent.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: return
+                val pending = goAsync()
+                Alerts.onUnconfirmedCheck(ctx, key)
+                // Give the network thread a moment before the receiver is torn down.
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ pending.finish() }, 8_000)
+            }
             action.startsWith(AlarmScheduler.ACTION_INFO) -> {
                 val title = intent.getStringExtra(AlarmScheduler.EXTRA_TITLE) ?: return
                 val text = intent.getStringExtra(AlarmScheduler.EXTRA_TEXT) ?: ""

@@ -96,6 +96,7 @@ class AlarmActivity : AppCompatActivity() {
             finish(); return
         }
         store.markTaken(k, method)
+        Alerts.onTaken(this, k, method)
         startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))
         AlarmScheduler.reschedule(this)
         val s = store.settings

@@ -28,8 +28,15 @@ data class Settings(
     val ringTimeoutMin: Int,
     val pin: String,
     val qrSecret: String,
+    /** Push alerts to the carer via ntfy.sh when a dose goes unconfirmed. */
+    val alertsEnabled: Boolean,
+    val alertTopic: String,
+    val alertAfterMin: Int,
 ) {
     fun toJson(): JSONObject = JSONObject()
+        .put("alertsEnabled", alertsEnabled)
+        .put("alertTopic", alertTopic)
+        .put("alertAfterMin", alertAfterMin)
         .put("doseTimes", JSONArray().apply { doseTimes.forEach { put(it.toJson()) } })
         .put("eatAfterMin", eatAfterMin)
         .put("eatBeforeMin", eatBeforeMin)
@@ -55,6 +62,9 @@ data class Settings(
             ringTimeoutMin = 4,
             pin = "",
             qrSecret = secret,
+            alertsEnabled = false,
+            alertTopic = "",
+            alertAfterMin = 30,
         )
 
         fun fromJson(o: JSONObject, secretIfMissing: String): Settings {
@@ -70,6 +80,9 @@ data class Settings(
                 ringTimeoutMin = o.optInt("ringTimeoutMin", d.ringTimeoutMin),
                 pin = o.optString("pin", ""),
                 qrSecret = o.optString("qrSecret", secretIfMissing).ifEmpty { secretIfMissing },
+                alertsEnabled = o.optBoolean("alertsEnabled", false),
+                alertTopic = o.optString("alertTopic", ""),
+                alertAfterMin = o.optInt("alertAfterMin", 30),
             )
         }
     }
@@ -87,10 +100,13 @@ data class DoseRecord(
     val method: String = "",
     val missed: Boolean = false,
     val snoozes: Int = 0,
+    /** A "not confirmed" alert was sent to the carer for this dose. */
+    val alerted: Boolean = false,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("key", key).put("shiftedTo", shiftedTo).put("shiftReason", shiftReason)
         .put("takenAt", takenAt).put("method", method).put("missed", missed).put("snoozes", snoozes)
+        .put("alerted", alerted)
 
     companion object {
         fun fromJson(o: JSONObject) = DoseRecord(
@@ -101,6 +117,7 @@ data class DoseRecord(
             method = o.optString("method", ""),
             missed = o.optBoolean("missed", false),
             snoozes = o.optInt("snoozes", 0),
+            alerted = o.optBoolean("alerted", false),
         )
     }
 }

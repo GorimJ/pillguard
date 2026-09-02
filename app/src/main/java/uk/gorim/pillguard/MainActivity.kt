@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         val target = e.dueDose(now) ?: e.nextUpcoming(now)
         if (target == null) { Ui.toast(this, "No dose is scheduled."); return@registerForActivityResult }
         store.markTaken(target.key, "scan", now)
+        Alerts.onTaken(this, target.key, "scan")
         startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))
         AlarmScheduler.reschedule(this)
         Ui.toast(this, "${target.label} dose recorded. Don't eat until ${TimeFmt.hm(now + store.settings.eatAfterMin * 60_000L)}.")

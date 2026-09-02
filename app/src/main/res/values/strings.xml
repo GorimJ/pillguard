@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">PillGuard</string>
+    <string name="settings">Settings</string>
+    <string name="print_qr">Print QR code</string>
+    <string name="history">History</string>
+    <string name="i_ate">I ate something</string>
+    <string name="snooze">Snooze</string>
+    <string name="scan_qr">Scan QR on pill container</string>
+    <string name="carer_override">Carer override</string>
+    <string name="notif_channel_alarm">Medication alarms</string>
+    <string name="notif_channel_info">Eating window</string>
+    <string name="notif_channel_status">Status</string>
+</resources>

@@ -1,0 +1,115 @@
+package uk.gorim.pillguard
+
+import android.app.TimePickerDialog
+import android.os.Bundle
+import android.view.Gravity
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
+
+class SettingsActivity : AppCompatActivity() {
+    private val doses = ArrayList<DoseTime>()
+    private lateinit var store: Store
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_settings)
+        title = getString(R.string.settings)
+        store = Store.get(this)
+        val s = store.settings
+        doses.addAll(s.doseTimes)
+
+        num(R.id.eatAfter).setText(s.eatAfterMin.toString())
+        num(R.id.eatBefore).setText(s.eatBeforeMin.toString())
+        num(R.id.snooze).setText(s.snoozeMin.toString())
+        num(R.id.ringTimeout).setText(s.ringTimeoutMin.toString())
+        findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nPrint it from the QR code screen and stick it on the bottom of the pill container."
+
+        findViewById<Button>(R.id.btnAddDose).setOnClickListener { editDose(null) }
+        findViewById<Button>(R.id.btnTestAlarm).setOnClickListener {
+            AlarmScheduler.scheduleTest(this, 15_000)
+            Ui.toast(this, "Test alarm in 15 seconds. Lock the phone now.")
+        }
+        findViewById<Button>(R.id.btnNewQr).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("New QR code?")
+                .setMessage("The printed code on the container will stop working until you print and attach the new one.")
+                .setPositiveButton("Generate") { _, _ ->
+                    store.settings = store.settings.copy(qrSecret = Store.newSecret())
+                    store.log("QR code regenerated")
+                    findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nPrint it from the QR code screen."
+                }
+                .setNegativeButton("Cancel", null).show()
+        }
+        findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
+        renderDoses()
+    }
+
+    private fun num(id: Int) = findViewById<EditText>(id)
+
+    private fun renderDoses() {
+        val box = findViewById<LinearLayout>(R.id.doseTimes)
+        box.removeAllViews()
+        doses.sortBy { it.minuteOfDay }
+        doses.forEachIndexed { i, d ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            val t = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = "${TimeFmt.minuteOfDay(d.minuteOfDay)}   ${d.label}"
+                isAllCaps = false; textSize = 18f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnClickListener { editDose(i) }
+            }
+            val x = MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
+                text = "Remove"; isAllCaps = false
+                setOnClickListener { doses.removeAt(i); renderDoses() }
+            }
+            row.addView(t); row.addView(x)
+            box.addView(row)
+        }
+    }
+
+    private fun editDose(index: Int?) {
+        val existing = index?.let { doses[it] }
+        val nameBox = EditText(this).apply { hint = "Label, e.g. Morning"; setText(existing?.label ?: ""); textSize = 18f }
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val wrap = LinearLayout(this).apply { setPadding(pad, pad / 2, pad, 0); addView(nameBox) }
+        AlertDialog.Builder(this)
+            .setTitle(if (existing == null) "New dose" else "Edit dose")
+            .setView(wrap)
+            .setPositiveButton("Pick time") { _, _ ->
+                val label = nameBox.text.toString().ifBlank { "Dose" }
+                val init = existing?.minuteOfDay ?: (12 * 60)
+                TimePickerDialog(this, { _, h, m ->
+                    val dt = DoseTime(h * 60 + m, label)
+                    if (index == null) doses.add(dt) else doses[index] = dt
+                    renderDoses()
+                }, init / 60, init % 60, true).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun save() {
+        if (doses.isEmpty()) { Ui.toast(this, "Add at least one dose time."); return }
+        val s = store.settings
+        val pinText = num(R.id.pin).text.toString()
+        if (pinText.isNotEmpty() && (pinText.length < 4 || pinText.length > 8)) { Ui.toast(this, "PIN must be 4–8 digits."); return }
+        val next = s.copy(
+            doseTimes = doses.sortedBy { it.minuteOfDay },
+            eatAfterMin = num(R.id.eatAfter).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatAfterMin,
+            eatBeforeMin = num(R.id.eatBefore).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatBeforeMin,
+            snoozeMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.snoozeMin,
+            ringTimeoutMin = num(R.id.ringTimeout).text.toString().toIntOrNull()?.coerceIn(1, 30) ?: s.ringTimeoutMin,
+            pin = if (pinText.isEmpty()) s.pin else pinText,
+        )
+        store.settings = next
+        store.log("Settings changed")
+        AlarmScheduler.reschedule(this)
+        Ui.toast(this, "Saved.")
+        finish()
+    }
+}

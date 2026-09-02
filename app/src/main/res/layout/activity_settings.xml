@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView style="@style/SettingsHeader" android:text="Medication times" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="Tap a time to change it. Eating windows are worked out automatically from these." />
+        <LinearLayout
+            android:id="@+id/doseTimes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+        <Button
+            android:id="@+id/btnAddDose"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="+ Add a dose time" />
+
+        <TextView style="@style/SettingsHeader" android:text="Eating rules" />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Minutes after a dose before eating" />
+            <EditText android:id="@+id/eatAfter" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Minutes food-free before the next dose" />
+            <EditText android:id="@+id/eatBefore" style="@style/SettingsNumber" />
+        </LinearLayout>
+
+        <TextView style="@style/SettingsHeader" android:text="Alarm" />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Snooze length (minutes)" />
+            <EditText android:id="@+id/snooze" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Auto-snooze after ringing for (minutes)" />
+            <EditText android:id="@+id/ringTimeout" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btnTestAlarm"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Test alarm (rings in 15 s — lock the phone)" />
+
+        <TextView style="@style/SettingsHeader" android:text="Carer PIN" />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="PIN (4–8 digits)" />
+            <EditText
+                android:id="@+id/pin"
+                style="@style/SettingsNumber"
+                android:inputType="numberPassword"
+                android:hint="unchanged" />
+        </LinearLayout>
+
+        <TextView style="@style/SettingsHeader" android:text="QR code" />
+        <TextView
+            android:id="@+id/qrInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="" />
+        <Button
+            android:id="@+id/btnNewQr"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Generate a new QR code (old one stops working)" />
+
+        <Button
+            android:id="@+id/btnSave"
+            style="@style/BigButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Save" />
+    </LinearLayout>
+</ScrollView>

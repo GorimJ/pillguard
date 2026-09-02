@@ -1,0 +1,24 @@
+# PillGuard
+
+Android alarm app for fixed-time medication where meals must be kept away from doses.
+
+Rules built in (all editable in Settings, behind the carer PIN):
+
+- Doses at fixed times of day (defaults 07:00, 10:30, 14:30, 18:30, 22:30).
+- No eating until 30 min after a dose was actually taken (QR scanned).
+- Eating must finish 90 min before the next dose.
+- "I ate something" pushes the *next* dose only, to at least 90 min after the meal.
+- An alarm can be snoozed (default 5 min, auto-snoozes after 4 min of ringing) but is only cleared by scanning the app's QR code on the pill container, or by the carer PIN (logged as an override).
+- An untaken dose is logged as missed once the following dose becomes due.
+
+## Install
+
+Download the APK from the latest GitHub release on the phone, open it and allow installing from this source. On first launch the app lists what it still needs (notifications, exact alarms, full-screen alarms, battery optimisation off, carer PIN) with a Fix button for each.
+
+Then: Settings → set carer PIN → QR code → Print, and stick a code on the bottom of the container. Use Settings → Test alarm with the phone locked to check sound and lock-screen behaviour.
+
+## Notes
+
+- Alarms play on the alarm audio stream, so silent mode and Do Not Disturb don't mute them.
+- The phone's own alarm volume controls loudness.
+- Everything is stored on the phone; nothing is sent anywhere.

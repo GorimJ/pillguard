@@ -81,6 +81,7 @@ object AlarmScheduler {
         }
 
         val s = store.settings
+        StatusWidget.updateAll(ctx)
 
         // Carer alert if the current/next dose is still unconfirmed N minutes after it was due.
         am.cancel(alertPi(ctx, null))

@@ -79,6 +79,13 @@
             android:layout_height="wrap_content"
             android:textAllCaps="false"
             android:text="Generate a new QR code (old one stops working)" />
+        <Button
+            android:id="@+id/btnAdoptQr"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Use a code I already printed (scan it)" />
 
         <TextView style="@style/SettingsHeader" android:text="Carer alerts" />
         <TextView

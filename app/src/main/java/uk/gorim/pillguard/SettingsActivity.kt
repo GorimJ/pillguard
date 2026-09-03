@@ -1,8 +1,13 @@
 package uk.gorim.pillguard
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.journeyapps.barcodescanner.ScanContract
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -16,6 +21,23 @@ import com.google.android.material.materialswitch.MaterialSwitch
 class SettingsActivity : AppCompatActivity() {
     private val doses = ArrayList<DoseTime>()
     private lateinit var store: Store
+
+    /** Adopt an already-printed code so a reinstall or new phone doesn't need new labels. */
+    private val adoptLauncher = registerForActivityResult(ScanContract()) { result ->
+        val text = result.contents?.trim() ?: return@registerForActivityResult
+        if (!text.startsWith(Store.QR_PREFIX) || text.length <= Store.QR_PREFIX.length) {
+            Ui.toast(this, "That isn't a PillGuard code."); return@registerForActivityResult
+        }
+        store.settings = store.settings.copy(qrSecret = text.removePrefix(Store.QR_PREFIX))
+        store.log("Adopted printed QR code")
+        findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nThis matches the printed labels."
+        Ui.toast(this, "Printed code adopted — the alarm will accept it.")
+    }
+
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) adoptLauncher.launch(Ui.scanOptions("Scan the printed PillGuard code to keep using it"))
+        else Ui.toast(this, "Camera permission is needed to scan.")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +68,11 @@ class SettingsActivity : AppCompatActivity() {
                     findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nPrint it from the QR code screen."
                 }
                 .setNegativeButton("Cancel", null).show()
+        }
+        findViewById<Button>(R.id.btnAdoptQr).setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+                adoptLauncher.launch(Ui.scanOptions("Scan the printed PillGuard code to keep using it"))
+            else cameraPermission.launch(Manifest.permission.CAMERA)
         }
         findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
 

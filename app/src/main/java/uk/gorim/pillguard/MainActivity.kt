@@ -176,6 +176,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(msg.toString())
             .setPositiveButton("Yes") { _, _ ->
                 store.recordMeal(ateAt)
+                Notifications.cancelMeal(this)
                 AlarmScheduler.reschedule(this)
                 render()
             }

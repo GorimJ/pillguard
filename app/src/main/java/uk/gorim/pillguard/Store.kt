@@ -92,6 +92,21 @@ class Store private constructor(ctx: Context) {
 
     fun engine() = Engine(settings, records, startedAt)
 
+    // ---- meal reminders ----
+    val stoppedMeals: Set<String>
+        get() = prefs.getStringSet("stoppedMeals", emptySet()) ?: emptySet()
+
+    fun stopMeal(key: String) {
+        // Keep only today's/tomorrow's keys so the set doesn't grow forever.
+        val today = TimeFmt.dateOf(System.currentTimeMillis()).toString()
+        val keep = stoppedMeals.filter { it >= today }.toMutableSet()
+        keep += key
+        prefs.edit().putStringSet("stoppedMeals", keep).apply()
+        log("${key.substringAfter('#').toIntOrNull()?.let { settings.meals.getOrNull(it)?.label } ?: "Meal"} reminder stopped for today")
+    }
+
+    fun mealLogic() = MealLogic(settings, engine(), meals, stoppedMeals)
+
     // ---- ringing state ----
     var ringingKey: String?
         get() = prefs.getString(K_RINGING, null)

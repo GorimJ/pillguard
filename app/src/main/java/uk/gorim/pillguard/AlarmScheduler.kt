@@ -18,6 +18,16 @@ object AlarmScheduler {
     const val EXTRA_TEXT = "text"
 
     const val ACTION_ALERT = "uk.gorim.pillguard.ALERT"
+    const val ACTION_MEAL = "uk.gorim.pillguard.MEAL"
+    const val ACTION_MEAL_ATE = "uk.gorim.pillguard.MEAL_ATE"
+    const val ACTION_MEAL_STOP = "uk.gorim.pillguard.MEAL_STOP"
+    private const val RC_MEAL = 107
+
+    private fun mealPi(ctx: Context, key: String?): PendingIntent {
+        val i = Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_MEAL)
+        if (key != null) i.putExtra(EXTRA_KEY, key)
+        return PendingIntent.getBroadcast(ctx, RC_MEAL, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
     private const val RC_DOSE = 100
     private const val RC_INFO_OPEN = 101
     private const val RC_INFO_CLOSE = 102
@@ -91,6 +101,12 @@ object AlarmScheduler {
                 val at = target.effectiveMillis + s.alertAfterMin * 60_000L
                 setInexact(am, maxOf(at, now + 1000), alertPi(ctx, target.key))
             }
+        }
+
+        // Meal reminders (bugle).
+        am.cancel(mealPi(ctx, null))
+        store.mealLogic().next(now)?.let { d ->
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, maxOf(d.fireAt, now + 1000), mealPi(ctx, d.key))
         }
 
         // Eating-window reminders.

@@ -22,3 +22,7 @@ Then: Settings → set carer PIN → QR code → Print, and stick a code on the 
 - Alarms play on the alarm audio stream, so silent mode and Do Not Disturb don't mute them.
 - The phone's own alarm volume controls loudness.
 - Everything is stored on the phone; nothing is sent anywhere.
+
+## Meal reminders
+
+A bugle call (synthesised, on the alarm stream) at each meal time — defaults breakfast 07:30, lunch 11:00, dinner 19:00 — repeating every 15/15/30 minutes until "Eating now" is tapped on the notification (which also logs the meal and shifts the next pill if needed) or "Not today". A reminder only sounds while eating is actually allowed, and is abandoned once the next meal time or the next pill arrives. Sound, times and repeat intervals are in Settings.

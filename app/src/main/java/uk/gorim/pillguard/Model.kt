@@ -17,6 +17,15 @@ data class DoseTime(val minuteOfDay: Int, val label: String) {
     }
 }
 
+/** A meal reminder: nags every [repeatMin] minutes from [minuteOfDay] until he says he's eating. */
+data class MealTime(val minuteOfDay: Int, val label: String, val repeatMin: Int) {
+    fun toJson(): JSONObject = JSONObject().put("m", minuteOfDay).put("l", label).put("r", repeatMin)
+
+    companion object {
+        fun fromJson(o: JSONObject) = MealTime(o.getInt("m"), o.getString("l"), o.optInt("r", 15))
+    }
+}
+
 data class Settings(
     val doseTimes: List<DoseTime>,
     /** Minutes after a dose is taken before eating is allowed. */
@@ -32,8 +41,16 @@ data class Settings(
     val alertsEnabled: Boolean,
     val alertTopic: String,
     val alertAfterMin: Int,
+    /** Meal reminders. */
+    val mealsEnabled: Boolean,
+    val meals: List<MealTime>,
+    /** Empty = bundled bugle call; otherwise a ringtone URI chosen by the user. */
+    val mealSoundUri: String,
 ) {
     fun toJson(): JSONObject = JSONObject()
+        .put("mealsEnabled", mealsEnabled)
+        .put("meals", JSONArray().apply { meals.forEach { put(it.toJson()) } })
+        .put("mealSoundUri", mealSoundUri)
         .put("alertsEnabled", alertsEnabled)
         .put("alertTopic", alertTopic)
         .put("alertAfterMin", alertAfterMin)
@@ -54,6 +71,12 @@ data class Settings(
             DoseTime(22 * 60 + 30, "Night"),
         )
 
+        val DEFAULT_MEALS = listOf(
+            MealTime(7 * 60 + 30, "Breakfast", 15),
+            MealTime(11 * 60, "Lunch", 15),
+            MealTime(19 * 60, "Dinner", 30),
+        )
+
         fun defaults(secret: String) = Settings(
             doseTimes = DEFAULT_DOSES,
             eatAfterMin = 30,
@@ -65,6 +88,9 @@ data class Settings(
             alertsEnabled = false,
             alertTopic = "",
             alertAfterMin = 30,
+            mealsEnabled = true,
+            meals = DEFAULT_MEALS,
+            mealSoundUri = "",
         )
 
         fun fromJson(o: JSONObject, secretIfMissing: String): Settings {
@@ -83,6 +109,11 @@ data class Settings(
                 alertsEnabled = o.optBoolean("alertsEnabled", false),
                 alertTopic = o.optString("alertTopic", ""),
                 alertAfterMin = o.optInt("alertAfterMin", 30),
+                mealsEnabled = o.optBoolean("mealsEnabled", true),
+                meals = o.optJSONArray("meals")?.let { a ->
+                    (0 until a.length()).map { MealTime.fromJson(a.getJSONObject(it)) }.sortedBy { it.minuteOfDay }
+                } ?: d.meals,
+                mealSoundUri = o.optString("mealSoundUri", ""),
             )
         }
     }

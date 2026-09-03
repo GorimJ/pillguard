@@ -28,6 +28,70 @@
             android:textAllCaps="false"
             android:text="+ Add a dose time" />
 
+        <TextView style="@style/SettingsHeader" android:text="Meal reminders" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="A bugle call at each meal time, repeated every few minutes until \"Eating now\" is tapped (or a meal is logged). It only sounds while eating is actually allowed, and stops for the day once the eating window has closed." />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Meal reminders on" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/mealsEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/mealTimes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnAddMeal"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="+ Add a meal" />
+            <Button
+                android:id="@+id/btnTestMeal"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textAllCaps="false"
+                android:text="Play sound" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/mealSoundInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="Sound: bugle call (built in)" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnPickMealSound"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Choose a different sound" />
+            <Button
+                android:id="@+id/btnBugle"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Back to bugle" />
+        </LinearLayout>
+
         <TextView style="@style/SettingsHeader" android:text="Eating rules" />
         <LinearLayout style="@style/SettingsRow">
             <TextView style="@style/SettingsLabel" android:text="Minutes after a dose before eating" />

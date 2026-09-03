@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -20,7 +21,18 @@ import com.google.android.material.materialswitch.MaterialSwitch
 
 class SettingsActivity : AppCompatActivity() {
     private val doses = ArrayList<DoseTime>()
+    private val mealList = ArrayList<MealTime>()
     private lateinit var store: Store
+    private var mealSoundUri: String = ""
+    private var previewPlayer: android.media.MediaPlayer? = null
+
+    private val soundPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        if (res.resultCode != RESULT_OK) return@registerForActivityResult
+        @Suppress("DEPRECATION")
+        val uri = res.data?.getParcelableExtra<android.net.Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        mealSoundUri = uri?.toString() ?: ""
+        renderMealSound()
+    }
 
     /** Adopt an already-printed code so a reinstall or new phone doesn't need new labels. */
     private val adoptLauncher = registerForActivityResult(ScanContract()) { result ->
@@ -76,6 +88,33 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
 
+        // Meal reminders
+        mealList.addAll(s.meals)
+        mealSoundUri = s.mealSoundUri
+        findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked = s.mealsEnabled
+        findViewById<Button>(R.id.btnAddMeal).setOnClickListener { editMeal(null) }
+        findViewById<Button>(R.id.btnTestMeal).setOnClickListener {
+            runCatching { previewPlayer?.stop(); previewPlayer?.release() }
+            // Preview whatever is currently selected (saved or not).
+            val saved = store.settings
+            store.settings = saved.copy(mealSoundUri = mealSoundUri)
+            previewPlayer = MealSound.play(this) { previewPlayer = null }
+            store.settings = saved
+        }
+        findViewById<Button>(R.id.btnPickMealSound).setOnClickListener {
+            val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Meal reminder sound")
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+            if (mealSoundUri.isNotEmpty())
+                i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(mealSoundUri))
+            soundPicker.launch(i)
+        }
+        findViewById<Button>(R.id.btnBugle).setOnClickListener { mealSoundUri = ""; renderMealSound() }
+        renderMealSound()
+        renderMeals()
+
         // Carer alerts
         if (s.alertTopic.isEmpty()) store.settings = s.copy(alertTopic = Alerts.newTopic())
         findViewById<MaterialSwitch>(R.id.alertsEnabled).isChecked = s.alertsEnabled
@@ -98,6 +137,66 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         renderDoses()
+    }
+
+    private fun renderMealSound() {
+        val name = if (mealSoundUri.isEmpty()) "bugle call (built in)"
+        else runCatching { RingtoneManager.getRingtone(this, android.net.Uri.parse(mealSoundUri))?.getTitle(this) }.getOrNull() ?: "custom"
+        findViewById<TextView>(R.id.mealSoundInfo).text = "Sound: $name"
+    }
+
+    private fun renderMeals() {
+        val box = findViewById<LinearLayout>(R.id.mealTimes)
+        box.removeAllViews()
+        mealList.sortBy { it.minuteOfDay }
+        mealList.forEachIndexed { i, m ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            val t = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = "${TimeFmt.minuteOfDay(m.minuteOfDay)}   ${m.label}   every ${m.repeatMin} min"
+                isAllCaps = false; textSize = 17f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnClickListener { editMeal(i) }
+            }
+            val x = MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
+                text = "Remove"; isAllCaps = false
+                setOnClickListener { mealList.removeAt(i); renderMeals() }
+            }
+            row.addView(t); row.addView(x)
+            box.addView(row)
+        }
+    }
+
+    private fun editMeal(index: Int?) {
+        val existing = index?.let { mealList[it] }
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val nameBox = EditText(this).apply { hint = "Name, e.g. Lunch"; setText(existing?.label ?: ""); textSize = 18f }
+        val repBox = EditText(this).apply {
+            hint = "Repeat every (minutes)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText((existing?.repeatMin ?: 15).toString()); textSize = 18f
+        }
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(pad, pad / 2, pad, 0); addView(nameBox); addView(repBox)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(if (existing == null) "New meal" else "Edit meal")
+            .setView(wrap)
+            .setPositiveButton("Pick time") { _, _ ->
+                val label = nameBox.text.toString().ifBlank { "Meal" }
+                val rep = repBox.text.toString().toIntOrNull()?.coerceIn(1, 120) ?: 15
+                val init = existing?.minuteOfDay ?: (12 * 60)
+                TimePickerDialog(this, { _, h, mm ->
+                    val mt = MealTime(h * 60 + mm, label, rep)
+                    if (index == null) mealList.add(mt) else mealList[index] = mt
+                    renderMeals()
+                }, init / 60, init % 60, true).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    override fun onDestroy() {
+        runCatching { previewPlayer?.stop(); previewPlayer?.release() }
+        super.onDestroy()
     }
 
     private fun renderTopic() {
@@ -160,6 +259,9 @@ class SettingsActivity : AppCompatActivity() {
             snoozeMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.snoozeMin,
             ringTimeoutMin = num(R.id.ringTimeout).text.toString().toIntOrNull()?.coerceIn(1, 30) ?: s.ringTimeoutMin,
             pin = if (pinText.isEmpty()) s.pin else pinText,
+            mealsEnabled = findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked,
+            meals = mealList.sortedBy { it.minuteOfDay },
+            mealSoundUri = mealSoundUri,
             alertsEnabled = findViewById<MaterialSwitch>(R.id.alertsEnabled).isChecked,
             alertAfterMin = num(R.id.alertAfter).text.toString().toIntOrNull()?.coerceIn(1, 240) ?: s.alertAfterMin,
         )

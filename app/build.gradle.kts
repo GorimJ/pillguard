@@ -11,15 +11,27 @@ android {
         applicationId = "uk.gorim.pillguard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.3.1"
     }
 
+    signingConfigs {
+        // Fixed sideload key kept in the (private) repo so every build upgrades over the last one.
+        // It only proves "same author as the previous build"; it is not a Play Store key.
+        create("sideload") {
+            storeFile = file("pillguard.jks")
+            storePassword = "pillguard-sideload"
+            keyAlias = "pillguard"
+            keyPassword = "pillguard-sideload"
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the APK installs straight from the Actions artifact.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("sideload")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("sideload")
         }
     }
     compileOptions {

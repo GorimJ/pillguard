@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="15sp"
-            android:text="A bugle call at each meal time, repeated every few minutes until \"Eating now\" is tapped (or a meal is logged). It only sounds while eating is actually allowed, and stops for the day once the eating window has closed." />
+            android:text="A bugle call at each meal time, repeated every few minutes until Eating now is tapped (or a meal is logged). It only sounds while eating is actually allowed, and stops for the day once the eating window has closed." />
         <LinearLayout style="@style/SettingsRow">
             <TextView style="@style/SettingsLabel" android:text="Meal reminders on" />
             <com.google.android.material.materialswitch.MaterialSwitch

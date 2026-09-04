@@ -154,6 +154,12 @@ class Store private constructor(ctx: Context) {
         log("$label dose taken (${if (method == "scan") "QR scanned" else "carer override"})", at)
     }
 
+    /** Undo a confirmation (accidental scan / override): the dose becomes pending again and the alarm re-arms. */
+    fun unmarkTaken(key: String) {
+        updateRecord(key) { it.copy(takenAt = 0, method = "", missed = false, alerted = false) }
+        log("${labelFor(key)} dose confirmation undone by carer — alarm re-enabled")
+    }
+
     fun markMissed(key: String) {
         updateRecord(key) { if (it.takenAt > 0) it else it.copy(missed = true) }
         log("${labelFor(key)} dose MISSED")

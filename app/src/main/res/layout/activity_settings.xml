@@ -28,6 +28,18 @@
             android:textAllCaps="false"
             android:text="+ Add a dose time" />
 
+        <TextView style="@style/SettingsHeader" android:text="Today's doses" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="Cleared an alarm by mistake? Tap the dose to make it pending again — the alarm will ring straight away if it is due, or at its time." />
+        <LinearLayout
+            android:id="@+id/todayDoses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
         <TextView style="@style/SettingsHeader" android:text="Meal reminders" />
         <TextView
             android:layout_width="match_parent"

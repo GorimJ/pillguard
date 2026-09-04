@@ -114,6 +114,7 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnBugle).setOnClickListener { mealSoundUri = ""; renderMealSound() }
         renderMealSound()
         renderMeals()
+        renderTodayDoses()
 
         // Carer alerts
         if (s.alertTopic.isEmpty()) store.settings = s.copy(alertTopic = Alerts.newTopic())
@@ -137,6 +138,42 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         renderDoses()
+    }
+
+    private fun renderTodayDoses() {
+        val box = findViewById<LinearLayout>(R.id.todayDoses)
+        box.removeAllViews()
+        val now = System.currentTimeMillis()
+        val doses = store.engine().todays(now)
+        if (doses.isEmpty()) { box.addView(TextView(this).apply { text = "No doses today."; textSize = 16f }); return }
+        for (d in doses) {
+            val status = when (d.status) {
+                DoseStatus.TAKEN -> "taken ${TimeFmt.hm(d.takenAt)}" + (if (d.method == "override") " (override)" else "")
+                DoseStatus.MISSED -> "missed"
+                DoseStatus.PENDING -> if (d.effectiveMillis <= now) "DUE" else "pending"
+            }
+            val b = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = "${TimeFmt.hm(d.effectiveMillis)}  ${d.label} — $status" + (if (d.status != DoseStatus.PENDING) "   ↺ make pending" else "")
+                isAllCaps = false; textSize = 16f
+                isEnabled = d.status != DoseStatus.PENDING
+                setOnClickListener {
+                    AlertDialog.Builder(this@SettingsActivity)
+                        .setTitle("Re-enable ${d.label.lowercase()} alarm?")
+                        .setMessage(
+                            "This marks the dose as NOT taken. " +
+                                if (d.effectiveMillis <= now) "It is already due, so the alarm will ring immediately." else "The alarm will ring at ${TimeFmt.hm(d.effectiveMillis)}."
+                        )
+                        .setPositiveButton("Re-enable") { _, _ ->
+                            store.unmarkTaken(d.key)
+                            AlarmScheduler.reschedule(this@SettingsActivity)
+                            renderTodayDoses()
+                            Ui.toast(this@SettingsActivity, "${d.label} dose is pending again.")
+                        }
+                        .setNegativeButton("Cancel", null).show()
+                }
+            }
+            box.addView(b)
+        }
     }
 
     private fun renderMealSound() {

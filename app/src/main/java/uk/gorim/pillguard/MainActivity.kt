@@ -27,6 +27,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import java.time.ZonedDateTime
 
 class MainActivity : AppCompatActivity() {
+    companion object { const val EARLY_SCAN_MIN = 60 }
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
         override fun run() { render(); handler.postDelayed(this, 30_000) }
@@ -38,8 +39,15 @@ class MainActivity : AppCompatActivity() {
         if (!store.matchesQr(result.contents)) { Ui.toast(this, "That's not the medication QR code."); return@registerForActivityResult }
         val now = System.currentTimeMillis()
         val e = store.engine()
-        val target = e.dueDose(now) ?: e.nextUpcoming(now)
-        if (target == null) { Ui.toast(this, "No dose is scheduled."); return@registerForActivityResult }
+        val due = e.dueDose(now)
+        val next = e.nextUpcoming(now)
+        // A manual scan only counts as taking a dose if one is due, or the next one is within 60 minutes.
+        val target = due ?: next?.takeIf { it.effectiveMillis - now <= EARLY_SCAN_MIN * 60_000L }
+        if (target == null) {
+            store.log("QR scanned — no dose due (next ${next?.let { "${it.label.lowercase()} at ${TimeFmt.hm(it.effectiveMillis)}" } ?: "none"}); logged only")
+            Ui.toast(this, "Scan logged. No pill is due yet" + (next?.let { " — next is ${it.label.lowercase()} at ${TimeFmt.hm(it.effectiveMillis)}." } ?: "."))
+            render(); return@registerForActivityResult
+        }
         store.markTaken(target.key, "scan", now)
         Alerts.onTaken(this, target.key, "scan")
         startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))

@@ -4,16 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="28dp"
+    android:padding="24dp"
     android:background="@color/alarm_bg">
 
     <TextView
         android:id="@+id/alarmTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Time for your medication"
+        android:text="Go and get your pills"
         android:textColor="@color/white"
-        android:textSize="30sp"
+        android:textSize="32sp"
         android:textStyle="bold"
         android:gravity="center" />
 
@@ -21,10 +21,10 @@
         android:id="@+id/alarmTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:text="07:00"
         android:textColor="#FFD166"
-        android:textSize="64sp"
+        android:textSize="56sp"
         android:textStyle="bold"
         android:gravity="center" />
 
@@ -32,39 +32,41 @@
         android:id="@+id/alarmSub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="32dp"
-        android:text="Scan the QR code on the bottom of the pill container to stop the alarm."
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="28dp"
+        android:text="The alarm will keep coming back every 2 minutes until you scan the code on the pill container."
         android:textColor="#CBD5E1"
-        android:textSize="20sp"
+        android:textSize="18sp"
         android:gravity="center" />
 
     <Button
-        android:id="@+id/btnScan"
+        android:id="@+id/btnGoing"
         style="@style/BigButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="96dp"
-        android:textSize="26sp"
-        android:text="@string/scan_qr" />
+        android:minHeight="120dp"
+        android:textSize="28sp"
+        android:backgroundTint="#FFD166"
+        android:textColor="@color/black"
+        android:text="I'm going to get the pill" />
 
     <Button
-        android:id="@+id/btnSnooze"
+        android:id="@+id/btnTaking"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:minHeight="72dp"
+        android:minHeight="84dp"
         android:textSize="22sp"
         android:textAllCaps="false"
-        android:text="Snooze 5 min" />
+        android:text="I'm taking it now — scan the container" />
 
     <Button
         android:id="@+id/btnOverride"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="28dp"
         android:textColor="#94A3B8"
         android:textSize="16sp"
         android:textAllCaps="false"

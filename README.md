@@ -8,7 +8,9 @@ Rules built in (all editable in Settings, behind the carer PIN):
 - No eating until 30 min after a dose was actually taken (QR scanned).
 - Eating must finish 90 min before the next dose.
 - "I ate something" pushes the *next* dose only, to at least 90 min after the meal.
-- An alarm can be snoozed (default 5 min, auto-snoozes after 4 min of ringing) but is only cleared by scanning the app's QR code on the pill container, or by the carer PIN (logged as an override).
+- The alarm says "go and get your pills" with two buttons: "I'm going to get the pill" (quiet for 2 min, then rings again) and "I'm taking it now — scan". It repeats every 2 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
+- A manual scan from the main screen only counts as a dose if one is due or the next is within 60 minutes; otherwise it is just logged.
+- History shows a day-by-day diary and can share it as text or CSV.
 - An untaken dose is logged as missed once the following dose becomes due.
 
 ## Install

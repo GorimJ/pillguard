@@ -85,8 +85,8 @@ class AlarmService : Service() {
         )
         val n = NotificationCompat.Builder(this, Notifications.CH_ALARM)
             .setSmallIcon(R.drawable.ic_notif)
-            .setContentTitle("Time for your $label medication ($time)")
-            .setContentText("Scan the QR code on the pill container to stop the alarm.")
+            .setContentTitle("Go and get your $label pills ($time)")
+            .setContentText("Scan the code on the pill container once you have them. The alarm repeats until you do.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -94,7 +94,7 @@ class AlarmService : Service() {
             .setAutoCancel(false)
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
-            .addAction(0, "Snooze ${Store.get(this).settings.snoozeMin} min", snoozePi)
+            .addAction(0, "I'm going to get it", snoozePi)
             .build()
         return try {
             if (Build.VERSION.SDK_INT >= 29) {
@@ -163,10 +163,10 @@ class AlarmService : Service() {
         val key = ringingKey ?: store.ringingKey
         if (key == AlarmScheduler.TEST_KEY) {
             stopRinging()
-            if (!auto) AlarmScheduler.scheduleTest(this, store.settings.snoozeMin * 60_000L)
+            if (!auto) AlarmScheduler.scheduleTest(this, store.settings.reRingMin * 60_000L)
             return
         }
-        if (key != null) store.recordSnooze(key, store.settings.snoozeMin, auto)
+        if (key != null) store.recordSnooze(key, store.settings.reRingMin, auto)
         stopRinging()
         AlarmScheduler.reschedule(this)
     }

@@ -40,13 +40,14 @@ class AlarmActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_alarm)
 
-        findViewById<Button>(R.id.btnScan).setOnClickListener {
+        findViewById<Button>(R.id.btnTaking).setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
                 Ui.launchScan(scanLauncher)
             else cameraPermission.launch(android.Manifest.permission.CAMERA)
         }
-        findViewById<Button>(R.id.btnSnooze).setOnClickListener {
+        findViewById<Button>(R.id.btnGoing).setOnClickListener {
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_SNOOZE))
+            Ui.toast(this, "OK — it will ring again in ${Store.get(this).settings.reRingMin} min unless you scan the container.")
             finish()
         }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
@@ -65,7 +66,8 @@ class AlarmActivity : AppCompatActivity() {
         val store = Store.get(this)
         key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: store.ringingKey
         val k = key
-        findViewById<Button>(R.id.btnSnooze).text = "Snooze ${store.settings.snoozeMin} min"
+        findViewById<TextView>(R.id.alarmSub).text =
+            "The alarm will keep coming back every ${store.settings.reRingMin} minutes until you scan the code on the pill container."
         if (k == AlarmScheduler.TEST_KEY) {
             findViewById<TextView>(R.id.alarmTitle).text = "TEST alarm"
             findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(System.currentTimeMillis())
@@ -73,7 +75,7 @@ class AlarmActivity : AppCompatActivity() {
         }
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
-        findViewById<TextView>(R.id.alarmTitle).text = "Time for your ${inst.label.lowercase()} medication"
+        findViewById<TextView>(R.id.alarmTitle).text = "Go and get your ${inst.label.lowercase()} pills"
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
     }
 

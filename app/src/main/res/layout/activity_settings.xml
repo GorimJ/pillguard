@@ -104,11 +104,11 @@
 
         <TextView style="@style/SettingsHeader" android:text="Alarm" />
         <LinearLayout style="@style/SettingsRow">
-            <TextView style="@style/SettingsLabel" android:text="Snooze length (minutes)" />
+            <TextView style="@style/SettingsLabel" android:text="Ring again after (minutes) — until the code is scanned" />
             <EditText android:id="@+id/snooze" style="@style/SettingsNumber" />
         </LinearLayout>
         <LinearLayout style="@style/SettingsRow">
-            <TextView style="@style/SettingsLabel" android:text="Auto-snooze after ringing for (minutes)" />
+            <TextView style="@style/SettingsLabel" android:text="Go quiet after ringing for (minutes)" />
             <EditText android:id="@+id/ringTimeout" style="@style/SettingsNumber" />
         </LinearLayout>
         <Button

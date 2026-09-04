@@ -10,4 +10,7 @@
     <color name="alarm_bg">#0F172A</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <!-- Overrides zxing: fully opaque outside the scan window so only the window is "live". -->
+    <color name="zxing_viewfinder_mask">#FF000000</color>
+    <color name="zxing_viewfinder_laser">#FFFFD166</color>
 </resources>

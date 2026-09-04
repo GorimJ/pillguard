@@ -32,8 +32,11 @@ data class Settings(
     val eatAfterMin: Int,
     /** Minutes before the next dose by which eating must be finished. */
     val eatBeforeMin: Int,
+    /** Legacy; superseded by [reRingMin]. */
     val snoozeMin: Int,
-    /** Minutes of continuous ringing before the alarm auto-snoozes. */
+    /** Minutes of quiet after "I'm going to get the pill" before the alarm rings again. */
+    val reRingMin: Int,
+    /** Minutes of continuous ringing before the alarm goes quiet and re-rings after [reRingMin]. */
     val ringTimeoutMin: Int,
     val pin: String,
     val qrSecret: String,
@@ -58,6 +61,7 @@ data class Settings(
         .put("eatAfterMin", eatAfterMin)
         .put("eatBeforeMin", eatBeforeMin)
         .put("snoozeMin", snoozeMin)
+        .put("reRingMin", reRingMin)
         .put("ringTimeoutMin", ringTimeoutMin)
         .put("pin", pin)
         .put("qrSecret", qrSecret)
@@ -82,7 +86,8 @@ data class Settings(
             eatAfterMin = 30,
             eatBeforeMin = 90,
             snoozeMin = 5,
-            ringTimeoutMin = 4,
+            reRingMin = 2,
+            ringTimeoutMin = 2,
             pin = "",
             qrSecret = secret,
             alertsEnabled = false,
@@ -103,6 +108,7 @@ data class Settings(
                 eatAfterMin = o.optInt("eatAfterMin", d.eatAfterMin),
                 eatBeforeMin = o.optInt("eatBeforeMin", d.eatBeforeMin),
                 snoozeMin = o.optInt("snoozeMin", d.snoozeMin),
+                reRingMin = o.optInt("reRingMin", d.reRingMin),
                 ringTimeoutMin = o.optInt("ringTimeoutMin", d.ringTimeoutMin),
                 pin = o.optString("pin", ""),
                 qrSecret = o.optString("qrSecret", secretIfMissing).ifEmpty { secretIfMissing },

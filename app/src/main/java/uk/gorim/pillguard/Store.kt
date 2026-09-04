@@ -162,7 +162,7 @@ class Store private constructor(ctx: Context) {
     fun recordSnooze(key: String, minutes: Int, auto: Boolean) {
         updateRecord(key) { it.copy(snoozes = it.snoozes + 1) }
         snoozeUntil = System.currentTimeMillis() + minutes * 60_000L
-        log("${labelFor(key)} alarm ${if (auto) "auto-" else ""}snoozed $minutes min")
+        log("${labelFor(key)} alarm quiet for $minutes min (${if (auto) "no response" else "going to get the pill"})")
     }
 
     /** Records a meal and shifts the next dose if needed. Returns the shifted dose and new time, or null. */

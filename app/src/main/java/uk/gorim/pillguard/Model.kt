@@ -92,7 +92,7 @@ data class Settings(
             qrSecret = secret,
             alertsEnabled = false,
             alertTopic = "",
-            alertAfterMin = 30,
+            alertAfterMin = 15,
             mealsEnabled = true,
             meals = DEFAULT_MEALS,
             mealSoundUri = "",
@@ -114,7 +114,7 @@ data class Settings(
                 qrSecret = o.optString("qrSecret", secretIfMissing).ifEmpty { secretIfMissing },
                 alertsEnabled = o.optBoolean("alertsEnabled", false),
                 alertTopic = o.optString("alertTopic", ""),
-                alertAfterMin = o.optInt("alertAfterMin", 30),
+                alertAfterMin = o.optInt("alertAfterMin", 15),
                 mealsEnabled = o.optBoolean("mealsEnabled", true),
                 meals = o.optJSONArray("meals")?.let { a ->
                     (0 until a.length()).map { MealTime.fromJson(a.getJSONObject(it)) }.sortedBy { it.minuteOfDay }

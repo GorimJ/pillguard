@@ -57,17 +57,23 @@ object Alerts {
         )
     }
 
-    /** Called after a dose is confirmed; closes the loop if an alert had gone out. */
+    /** Called after every dose confirmation: a quiet "taken" note, louder if an alert had gone out first. */
     fun onTaken(ctx: Context, key: String, method: String) {
         val store = Store.get(ctx)
         if (!store.settings.alertsEnabled) return
         val r = store.records[key] ?: return
-        if (!r.alerted) return
         val label = store.labelFor(key)
+        val inst = store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == key }
+        val lateMin = inst?.let { (r.takenAt - it.effectiveMillis) / 60_000 } ?: 0
+        val timing = when {
+            lateMin > 2 -> "$lateMin min late"
+            lateMin < -2 -> "${-lateMin} min early"
+            else -> "on time"
+        }
         send(
-            ctx, "$label medication now taken",
-            "Confirmed at ${TimeFmt.hm(r.takenAt)} (${if (method == "scan") "QR scanned" else "carer override"}).",
-            priority = 3,
+            ctx, "$label medication taken",
+            "${TimeFmt.hm(r.takenAt)} — $timing (${if (method == "scan") "QR scanned" else "carer override"}).",
+            priority = if (r.alerted) 3 else 2,
         )
     }
 }

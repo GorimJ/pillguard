@@ -43,6 +43,15 @@ class Store private constructor(ctx: Context) {
         }
         set(v) = prefs.edit().putString(K_SETTINGS, v.toJson().toString()).apply()
 
+    /** One-off: the unconfirmed-dose alert moved from 30 to 15 minutes; carry existing installs across. */
+    fun migrate() {
+        if (!prefs.getBoolean("mig_alert15", false)) {
+            val s = settings
+            if (s.alertAfterMin == 30) settings = s.copy(alertAfterMin = 15)
+            prefs.edit().putBoolean("mig_alert15", true).apply()
+        }
+    }
+
     val qrPayload: String get() = QR_PREFIX + settings.qrSecret
     fun matchesQr(text: String?): Boolean = text != null && text.trim() == qrPayload
 

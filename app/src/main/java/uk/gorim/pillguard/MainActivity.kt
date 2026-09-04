@@ -37,6 +37,10 @@ class MainActivity : AppCompatActivity() {
         if (result.contents == null) return@registerForActivityResult
         val store = Store.get(this)
         if (!store.matchesQr(result.contents)) { Ui.toast(this, "That's not the medication QR code."); return@registerForActivityResult }
+        if (AlarmService.ringingKey == AlarmScheduler.TEST_KEY) {
+            AlarmScheduler.cancelTest(this)
+            Ui.toast(this, "Test alarm cleared."); return@registerForActivityResult
+        }
         val now = System.currentTimeMillis()
         val e = store.engine()
         val due = e.dueDose(now)
@@ -66,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Notifications.ensureChannels(this)
+        Store.get(this).migrate()
 
         findViewById<Button>(R.id.btnAte).setOnClickListener { askMealTime() }
         findViewById<Button>(R.id.btnScanNow).setOnClickListener {

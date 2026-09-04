@@ -142,6 +142,15 @@ object AlarmScheduler {
         setExact(am, ctx, System.currentTimeMillis() + delayMs, pi)
     }
 
+    /** Cancels a pending test alarm and silences it if it is ringing right now. */
+    fun cancelTest(ctx: Context) {
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        val i = Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_DOSE).putExtra(EXTRA_KEY, TEST_KEY)
+        am.cancel(PendingIntent.getBroadcast(ctx, 103, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        if (AlarmService.ringingKey == TEST_KEY)
+            ctx.startService(Intent(ctx, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))
+    }
+
     private fun setExact(am: AlarmManager, ctx: Context, at: Long, pi: PendingIntent) {
         val show = PendingIntent.getActivity(
             ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

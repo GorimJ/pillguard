@@ -69,6 +69,10 @@ class SettingsActivity : AppCompatActivity() {
             AlarmScheduler.scheduleTest(this, 15_000)
             Ui.toast(this, "Test alarm in 15 seconds. Lock the phone now.")
         }
+        findViewById<Button>(R.id.btnCancelTest).setOnClickListener {
+            AlarmScheduler.cancelTest(this)
+            Ui.toast(this, "Test alarm cancelled.")
+        }
         findViewById<Button>(R.id.btnNewQr).setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("New QR code?")

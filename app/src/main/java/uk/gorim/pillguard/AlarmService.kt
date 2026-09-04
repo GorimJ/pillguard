@@ -10,9 +10,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -20,7 +18,8 @@ import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 
 /**
- * Foreground service that rings until the dose is confirmed (QR scan / carer PIN) or snoozed.
+ * Foreground service that rings, without stopping on its own, until the dose is confirmed (QR scan /
+ * carer PIN) or "I'm going to get the pill" is pressed (quiet for reRingMin, then rings again).
  * Plays on the ALARM audio stream so silent mode and Do Not Disturb don't mute it.
  */
 class AlarmService : Service() {
@@ -35,8 +34,6 @@ class AlarmService : Service() {
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private val handler = Handler(Looper.getMainLooper())
-    private var timeoutRunnable: Runnable? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -61,7 +58,6 @@ class AlarmService : Service() {
             ringingKey = key
             startRinging()
             store.log("$label alarm ringing")
-            armTimeout()
             // Also try to bring the alarm screen up directly (works when the app is allowed to; the
             // full-screen intent on the notification covers the locked-screen case).
             runCatching { startActivity(alarmActivityIntent(key)) }
@@ -115,8 +111,8 @@ class AlarmService : Service() {
 
     private fun startRinging() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        val timeoutMin = Store.get(this).settings.ringTimeoutMin.coerceAtLeast(1)
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire((timeoutMin + 1) * 60_000L) }
+        // No timeout: the alarm rings until someone interacts with it. Released in releaseRinging().
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire() }
 
         val candidates = listOfNotNull(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
@@ -152,12 +148,6 @@ class AlarmService : Service() {
         runCatching { vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0), attrs) }
     }
 
-    private fun armTimeout() {
-        timeoutRunnable?.let { handler.removeCallbacks(it) }
-        val mins = Store.get(this).settings.ringTimeoutMin.coerceAtLeast(1)
-        timeoutRunnable = Runnable { snooze(auto = true) }.also { handler.postDelayed(it, mins * 60_000L) }
-    }
-
     private fun snooze(auto: Boolean) {
         val store = Store.get(this)
         val key = ringingKey ?: store.ringingKey
@@ -172,8 +162,6 @@ class AlarmService : Service() {
     }
 
     private fun releaseRinging() {
-        timeoutRunnable?.let { handler.removeCallbacks(it) }
-        timeoutRunnable = null
         runCatching { player?.stop() }; runCatching { player?.release() }; player = null
         runCatching { vibrator?.cancel() }
         runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }

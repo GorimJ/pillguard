@@ -62,7 +62,6 @@ class SettingsActivity : AppCompatActivity() {
         num(R.id.eatAfter).setText(s.eatAfterMin.toString())
         num(R.id.eatBefore).setText(s.eatBeforeMin.toString())
         num(R.id.snooze).setText(s.reRingMin.toString())
-        num(R.id.ringTimeout).setText(s.ringTimeoutMin.toString())
         findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nPrint it from the QR code screen and stick it on the bottom of the pill container."
 
         findViewById<Button>(R.id.btnAddDose).setOnClickListener { editDose(null) }
@@ -294,7 +293,6 @@ class SettingsActivity : AppCompatActivity() {
             eatAfterMin = num(R.id.eatAfter).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatAfterMin,
             eatBeforeMin = num(R.id.eatBefore).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatBeforeMin,
             reRingMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.reRingMin,
-            ringTimeoutMin = num(R.id.ringTimeout).text.toString().toIntOrNull()?.coerceIn(1, 30) ?: s.ringTimeoutMin,
             pin = if (pinText.isEmpty()) s.pin else pinText,
             mealsEnabled = findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked,
             meals = mealList.sortedBy { it.minuteOfDay },

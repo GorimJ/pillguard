@@ -119,10 +119,11 @@
             <TextView style="@style/SettingsLabel" android:text="Ring again after (minutes) — until the code is scanned" />
             <EditText android:id="@+id/snooze" style="@style/SettingsNumber" />
         </LinearLayout>
-        <LinearLayout style="@style/SettingsRow">
-            <TextView style="@style/SettingsLabel" android:text="Go quiet after ringing for (minutes)" />
-            <EditText android:id="@+id/ringTimeout" style="@style/SettingsNumber" />
-        </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="The alarm rings without stopping until a button is pressed or the code is scanned." />
         <Button
             android:id="@+id/btnTestAlarm"
             style="@style/Widget.Material3.Button.TonalButton"

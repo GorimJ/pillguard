@@ -5,60 +5,48 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="@color/alarm_bg">
+    android:background="#14532D">
 
     <TextView
-        android:id="@+id/alarmTitle"
+        android:id="@+id/mealTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="PILLS"
+        android:text="Breakfast"
         android:textColor="@color/white"
-        android:textSize="60sp"
+        android:textSize="48sp"
         android:textStyle="bold"
         android:gravity="center" />
 
     <TextView
-        android:id="@+id/alarmTime"
+        android:id="@+id/mealSub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="07:00"
-        android:textColor="#FFD166"
-        android:textSize="72sp"
-        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:text="Time to eat"
+        android:textColor="#BBF7D0"
+        android:textSize="30sp"
         android:gravity="center" />
 
     <Button
-        android:id="@+id/btnGoing"
+        android:id="@+id/btnEating"
         style="@style/BigButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
         android:minHeight="150dp"
-        android:textSize="40sp"
+        android:textSize="34sp"
         android:backgroundTint="#FFD166"
         android:textColor="@color/black"
-        android:text="GET PILL" />
+        android:text="OK, I'm eating now" />
 
     <Button
-        android:id="@+id/btnTaking"
+        android:id="@+id/btnLater"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:minHeight="100dp"
-        android:textSize="32sp"
+        android:layout_marginTop="20dp"
+        android:minHeight="80dp"
+        android:textSize="24sp"
         android:textAllCaps="false"
-        android:text="SCAN — taking it" />
-
-    <Button
-        android:id="@+id/btnOverride"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:textColor="#94A3B8"
-        android:textSize="16sp"
-        android:textAllCaps="false"
-        android:text="@string/carer_override" />
+        android:text="Remind me later" />
 </LinearLayout>

@@ -47,10 +47,15 @@ object Notifications {
         }
     }
 
+    fun mealActivityIntent(ctx: Context, key: String, label: String): Intent =
+        Intent(ctx, MealActivity::class.java)
+            .putExtra(AlarmScheduler.EXTRA_KEY, key).putExtra(AlarmScheduler.EXTRA_TITLE, label)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
     fun meal(ctx: Context, key: String, label: String, text: String) {
         ensureChannels(ctx)
         val open = PendingIntent.getActivity(
-            ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ctx, 3, mealActivityIntent(ctx, key, label), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val ate = PendingIntent.getBroadcast(
             ctx, 201, Intent(ctx, AlarmReceiver::class.java).setAction(AlarmScheduler.ACTION_MEAL_ATE).putExtra(AlarmScheduler.EXTRA_KEY, key),
@@ -69,6 +74,7 @@ object Notifications {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(open)
+            .setFullScreenIntent(open, true)
             .addAction(0, "Eating now", ate)
             .addAction(0, "Not today", stop)
             .setAutoCancel(false)

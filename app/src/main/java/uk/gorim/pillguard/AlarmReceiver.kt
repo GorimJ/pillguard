@@ -38,6 +38,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     val text = (if (late >= 5) "${d.label} was at ${TimeFmt.hm(d.mealMillis)} — $late min ago. " else "") +
                         st.detail + "\nTap \"Eating now\" once you start, or \"Not today\" to stop these until tomorrow."
                     Notifications.meal(ctx, key, d.label, text)
+                    runCatching { ctx.startActivity(Notifications.mealActivityIntent(ctx, key, d.label)) }
                     store.log("${d.label} reminder rang")
                     runCatching {
                         val v = if (android.os.Build.VERSION.SDK_INT >= 31)

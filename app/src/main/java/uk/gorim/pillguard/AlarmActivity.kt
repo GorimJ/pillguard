@@ -47,7 +47,7 @@ class AlarmActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnGoing).setOnClickListener {
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_SNOOZE))
-            Ui.toast(this, "OK — it will ring again in ${Store.get(this).settings.reRingMin} min unless you scan the container.")
+            Ui.toast(this, "Rings again in ${Store.get(this).settings.reRingMin} min")
             finish()
         }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
@@ -66,16 +66,14 @@ class AlarmActivity : AppCompatActivity() {
         val store = Store.get(this)
         key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: store.ringingKey
         val k = key
-        findViewById<TextView>(R.id.alarmSub).text =
-            "The alarm will keep coming back every ${store.settings.reRingMin} minutes until you scan the code on the pill container."
         if (k == AlarmScheduler.TEST_KEY) {
-            findViewById<TextView>(R.id.alarmTitle).text = "TEST alarm"
+            findViewById<TextView>(R.id.alarmTitle).text = "TEST"
             findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(System.currentTimeMillis())
             return
         }
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
-        findViewById<TextView>(R.id.alarmTitle).text = "Go and get your ${inst.label.lowercase()} pills"
+        findViewById<TextView>(R.id.alarmTitle).text = "${inst.label.uppercase()} PILLS"
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
     }
 

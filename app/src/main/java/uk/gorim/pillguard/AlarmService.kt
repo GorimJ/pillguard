@@ -96,6 +96,8 @@ class AlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setColor(androidx.core.content.ContextCompat.getColor(this, R.color.pill_alarm_bg))
+            .setColorized(true)
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
             .addAction(0, "I'm going to get it", snoozePi)

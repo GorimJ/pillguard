@@ -51,7 +51,7 @@
             android:launchMode="singleTask"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:theme="@style/Theme.PillGuard.Alarm" />
+            android:theme="@style/Theme.PillGuard.Meal" />
 
         <activity
             android:name=".LockedCaptureActivity"

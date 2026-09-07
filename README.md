@@ -25,6 +25,13 @@ Then: Settings → set carer PIN → QR code → Print, and stick a code on the 
 - The phone's own alarm volume controls loudness.
 - Everything is stored on the phone; nothing is sent anywhere.
 
+## Telling the alarms apart
+
+Each alarm type owns a colour and a glyph, so the type is clear before any text is read: pills are a
+blue screen with a capsule, meals a green screen with a knife and fork. The glyph matters as much as
+the colour — dark blue against dark green is the pair red-green colour deficiency hits hardest. The
+heads-up notifications carry the same colours.
+
 ## Volume
 
 The alarm starts quiet and climbs to full over 5 minutes, measured from when the dose came due (so

@@ -75,6 +75,8 @@ object Notifications {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(open)
             .setFullScreenIntent(open, true)
+            .setColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.meal_alarm_bg))
+            .setColorized(true)
             .addAction(0, "Eating now", ate)
             .addAction(0, "Not today", stop)
             .setAutoCancel(false)

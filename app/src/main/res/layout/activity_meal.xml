@@ -5,7 +5,15 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="#14532D">
+    android:background="@color/meal_alarm_bg">
+
+    <ImageView
+        android:id="@+id/mealGlyph"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="4dp"
+        android:src="@drawable/ic_meal_big"
+        android:contentDescription="Food" />
 
     <TextView
         android:id="@+id/mealTitle"

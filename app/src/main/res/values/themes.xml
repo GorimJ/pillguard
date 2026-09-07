@@ -16,8 +16,16 @@
 
     <style name="Theme.PillGuard.Alarm" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/brand</item>
-        <item name="android:windowBackground">@color/alarm_bg</item>
-        <item name="android:statusBarColor">@color/alarm_bg</item>
+        <item name="android:windowBackground">@color/pill_alarm_bg</item>
+        <item name="android:statusBarColor">@color/pill_alarm_bg</item>
+        <item name="android:navigationBarColor">@color/pill_alarm_bg</item>
+    </style>
+
+    <style name="Theme.PillGuard.Meal" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="android:windowBackground">@color/meal_alarm_bg</item>
+        <item name="android:statusBarColor">@color/meal_alarm_bg</item>
+        <item name="android:navigationBarColor">@color/meal_alarm_bg</item>
     </style>
 
     <style name="BigButton" parent="Widget.Material3.Button">

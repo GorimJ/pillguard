@@ -50,7 +50,8 @@ class AlarmReceiver : BroadcastReceiver() {
                     val pending = goAsync()
                     var done = false
                     val finish = { if (!done) { done = true; runCatching { pending.finish() } } }
-                    MealSound.play(ctx) { finish() }
+                    // Later repeats are louder, on the same ramp as the pill alarm.
+                    MealSound.play(ctx, Volume.rampAmp(store.settings, (late.toLong().coerceAtLeast(0)) * 60_000L)) { finish() }
                     android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finish() }, 9_000)
                 }
                 // Arm the next repeat (or the next meal) regardless.

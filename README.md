@@ -25,6 +25,13 @@ Then: Settings → set carer PIN → QR code → Print, and stick a code on the 
 - The phone's own alarm volume controls loudness.
 - Everything is stored on the phone; nothing is sent anywhere.
 
+## Volume
+
+The alarm starts quiet and climbs to full over 5 minutes, measured from when the dose came due (so
+pressing "I'm going to get the pill" and walking away does not reset it). Settings has the ceiling
+(as a percentage of the phone's alarm volume), the starting level, and the ramp length, with a
+sample button that plays both ends. Meal bugles get louder on the same curve as the repeats go on.
+
 ## Meal reminders
 
 A bugle call (synthesised, on the alarm stream) at each meal time — defaults breakfast 07:30, lunch 11:00, dinner 19:00 — repeating every 15/15/30 minutes until "Eating now" is tapped on the notification (which also logs the meal and shifts the next pill if needed) or "Not today". A reminder only sounds while eating is actually allowed, and is abandoned once the next meal time or the next pill arrives. Sound, times and repeat intervals are in Settings.

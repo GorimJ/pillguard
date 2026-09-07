@@ -69,6 +69,21 @@ class SettingsActivity : AppCompatActivity() {
             AlarmScheduler.scheduleTest(this, 15_000)
             Ui.toast(this, "Test alarm in 15 seconds. Lock the phone now.")
         }
+        // Volume
+        val seek = findViewById<android.widget.SeekBar>(R.id.volSeek)
+        seek.progress = s.alarmVolumePct
+        findViewById<TextView>(R.id.volLabel).text = "Loudest: ${s.alarmVolumePct}%"
+        seek.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar, p: Int, fromUser: Boolean) {
+                findViewById<TextView>(R.id.volLabel).text = "Loudest: $p%"
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar) {}
+        })
+        num(R.id.volStart).setText(s.alarmStartVolumePct.toString())
+        num(R.id.volRamp).setText(s.volumeRampMin.toString())
+        findViewById<Button>(R.id.btnVolSample).setOnClickListener { playVolumeSample() }
+
         findViewById<Button>(R.id.btnCancelTest).setOnClickListener {
             AlarmScheduler.cancelTest(this)
             Ui.toast(this, "Test alarm cancelled.")
@@ -141,6 +156,47 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         renderDoses()
+    }
+
+    /** Plays the alarm tone: 4 s at the start volume, then 4 s at full, so both ends can be judged. */
+    private fun playVolumeSample() {
+        stopPreview()
+        val probe = store.settings.copy(
+            alarmVolumePct = findViewById<android.widget.SeekBar>(R.id.volSeek).progress.coerceIn(10, 100),
+            alarmStartVolumePct = num(R.id.volStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: 25,
+        )
+        val uri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            ?: android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI
+        previewPlayer = runCatching {
+            android.media.MediaPlayer().apply {
+                setAudioAttributes(
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+                )
+                setDataSource(this@SettingsActivity, uri)
+                isLooping = true
+                val a = Volume.startAmp(probe)
+                setVolume(a, a)
+                prepare(); start()
+            }
+        }.getOrNull()
+        if (previewPlayer == null) { Ui.toast(this, "Couldn't play a sample."); return }
+        Ui.toast(this, "Quiet start…")
+        val h = android.os.Handler(android.os.Looper.getMainLooper())
+        h.postDelayed({
+            previewPlayer?.let { p ->
+                val a = Volume.maxAmp(probe)
+                runCatching { p.setVolume(a, a) }
+                Ui.toast(this, "…full volume")
+            }
+        }, 4_000)
+        h.postDelayed({ stopPreview() }, 8_000)
+    }
+
+    private fun stopPreview() {
+        runCatching { previewPlayer?.stop(); previewPlayer?.release() }
+        previewPlayer = null
     }
 
     private fun renderTodayDoses() {
@@ -235,7 +291,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        runCatching { previewPlayer?.stop(); previewPlayer?.release() }
+        stopPreview()
         super.onDestroy()
     }
 
@@ -298,6 +354,9 @@ class SettingsActivity : AppCompatActivity() {
             eatBeforeMin = num(R.id.eatBefore).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatBeforeMin,
             reRingMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.reRingMin,
             pin = if (pinText.isEmpty()) s.pin else pinText,
+            alarmVolumePct = findViewById<android.widget.SeekBar>(R.id.volSeek).progress.coerceIn(10, 100),
+            alarmStartVolumePct = num(R.id.volStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: s.alarmStartVolumePct,
+            volumeRampMin = num(R.id.volRamp).text.toString().toIntOrNull()?.coerceIn(0, 60) ?: s.volumeRampMin,
             mealsEnabled = findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked,
             meals = mealList.sortedBy { it.minuteOfDay },
             mealSoundUri = mealSoundUri,

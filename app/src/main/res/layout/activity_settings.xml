@@ -145,6 +145,43 @@
                 android:text="Cancel test alarm" />
         </LinearLayout>
 
+        <TextView style="@style/SettingsHeader" android:text="Volume" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="The alarm starts quiet and gets louder, so it does not startle him nearby but still reaches another room. The phone\'s own alarm volume is the ceiling." />
+        <TextView
+            android:id="@+id/volLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="17sp"
+            android:text="Loudest: 100%" />
+        <SeekBar
+            android:id="@+id/volSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="10"
+            android:max="100"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Start at (% of that)" />
+            <EditText android:id="@+id/volStart" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Reach full volume after (minutes)" />
+            <EditText android:id="@+id/volRamp" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btnVolSample"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Hear quiet start, then full" />
+
         <TextView style="@style/SettingsHeader" android:text="Carer PIN" />
         <LinearLayout style="@style/SettingsRow">
             <TextView style="@style/SettingsLabel" android:text="PIN (4–8 digits)" />

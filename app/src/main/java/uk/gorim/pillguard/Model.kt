@@ -49,11 +49,20 @@ data class Settings(
     val meals: List<MealTime>,
     /** Empty = bundled bugle call; otherwise a ringtone URI chosen by the user. */
     val mealSoundUri: String,
+    /** Loudest the app will play, as a percentage of the phone's alarm volume. */
+    val alarmVolumePct: Int,
+    /** Where the alarm starts, as a percentage of [alarmVolumePct]. */
+    val alarmStartVolumePct: Int,
+    /** Minutes of ringing over which it climbs from start to full. 0 = full at once. */
+    val volumeRampMin: Int,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mealsEnabled", mealsEnabled)
         .put("meals", JSONArray().apply { meals.forEach { put(it.toJson()) } })
         .put("mealSoundUri", mealSoundUri)
+        .put("alarmVolumePct", alarmVolumePct)
+        .put("alarmStartVolumePct", alarmStartVolumePct)
+        .put("volumeRampMin", volumeRampMin)
         .put("alertsEnabled", alertsEnabled)
         .put("alertTopic", alertTopic)
         .put("alertAfterMin", alertAfterMin)
@@ -96,6 +105,9 @@ data class Settings(
             mealsEnabled = true,
             meals = DEFAULT_MEALS,
             mealSoundUri = "",
+            alarmVolumePct = 100,
+            alarmStartVolumePct = 25,
+            volumeRampMin = 5,
         )
 
         fun fromJson(o: JSONObject, secretIfMissing: String): Settings {
@@ -120,6 +132,9 @@ data class Settings(
                     (0 until a.length()).map { MealTime.fromJson(a.getJSONObject(it)) }.sortedBy { it.minuteOfDay }
                 } ?: d.meals,
                 mealSoundUri = o.optString("mealSoundUri", ""),
+                alarmVolumePct = o.optInt("alarmVolumePct", d.alarmVolumePct),
+                alarmStartVolumePct = o.optInt("alarmStartVolumePct", d.alarmStartVolumePct),
+                volumeRampMin = o.optInt("volumeRampMin", d.volumeRampMin),
             )
         }
     }

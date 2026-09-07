@@ -10,7 +10,9 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -31,6 +33,9 @@ class AlarmService : Service() {
             private set
     }
 
+    private val handler = Handler(Looper.getMainLooper())
+    private var rampRunnable: Runnable? = null
+    private var rampAnchor = 0L
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -56,6 +61,9 @@ class AlarmService : Service() {
         if (ringingKey != key) {
             if (ringingKey != null) releaseRinging() // a different dose took over: stop the old sound first
             ringingKey = key
+            // Escalate from when this dose first came due, not from this bout — pressing
+            // "I'm going to get the pill" and wandering off should not reset it to a whisper.
+            rampAnchor = inst?.effectiveMillis?.takeIf { it <= System.currentTimeMillis() } ?: System.currentTimeMillis()
             startRinging()
             store.log("$label alarm ringing")
             // Also try to bring the alarm screen up directly (works when the app is allowed to; the
@@ -131,6 +139,9 @@ class AlarmService : Service() {
                     )
                     setDataSource(this@AlarmService, uri)
                     isLooping = true
+                    val s0 = Store.get(this@AlarmService).settings
+                    val a0 = Volume.rampAmp(s0, System.currentTimeMillis() - rampAnchor)
+                    setVolume(a0, a0)
                     prepare()
                     start()
                 }
@@ -146,6 +157,28 @@ class AlarmService : Service() {
         val pattern = longArrayOf(0, 800, 400, 800, 1200)
         val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
         runCatching { vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0), attrs) }
+
+        startVolumeRamp()
+    }
+
+    /**
+     * Climbs from the start volume to full over volumeRampMin, so a phone left in another room
+     * gets progressively louder instead of startling him when it is next to his chair.
+     */
+    private fun startVolumeRamp() {
+        rampRunnable?.let { handler.removeCallbacks(it) }
+        if (rampAnchor == 0L) rampAnchor = System.currentTimeMillis()
+        val settings = Store.get(this).settings
+        val r = object : Runnable {
+            override fun run() {
+                val p = player ?: return
+                val amp = Volume.rampAmp(settings, System.currentTimeMillis() - rampAnchor)
+                runCatching { p.setVolume(amp, amp) }
+                if (amp < Volume.maxAmp(settings)) handler.postDelayed(this, 10_000)
+            }
+        }
+        rampRunnable = r
+        handler.postDelayed(r, 10_000)
     }
 
     private fun snooze(auto: Boolean) {
@@ -162,6 +195,9 @@ class AlarmService : Service() {
     }
 
     private fun releaseRinging() {
+        rampRunnable?.let { handler.removeCallbacks(it) }
+        rampRunnable = null
+        rampAnchor = 0L
         runCatching { player?.stop() }; runCatching { player?.release() }; player = null
         runCatching { vibrator?.cancel() }
         runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }

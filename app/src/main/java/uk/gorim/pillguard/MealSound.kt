@@ -16,8 +16,11 @@ object MealSound {
         return if (s.isEmpty()) bundledUri(ctx) else Uri.parse(s)
     }
 
-    /** Returns the player so a caller can stop it early; calls [onDone] when finished (max 25 s). */
-    fun play(ctx: Context, onDone: () -> Unit = {}): MediaPlayer? {
+    /**
+     * Plays once at [amp] (0..1 linear amplitude; null = the configured full volume).
+     * Returns the player so a caller can stop it early; calls [onDone] when finished (max 25 s).
+     */
+    fun play(ctx: Context, amp: Float? = null, onDone: () -> Unit = {}): MediaPlayer? {
         val app = ctx.applicationContext
         val handler = Handler(Looper.getMainLooper())
         var finished = false
@@ -35,6 +38,8 @@ object MealSound {
                 )
                 setDataSource(app, uri(app))
                 isLooping = false
+                val v = amp ?: Volume.maxAmp(Store.get(app).settings)
+                setVolume(v, v)
                 setOnCompletionListener { finish(it) }
                 setOnErrorListener { p, _, _ -> finish(p); true }
                 prepare()
@@ -49,6 +54,8 @@ object MealSound {
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
                     )
                     setDataSource(app, bundledUri(app))
+                    val v = amp ?: Volume.maxAmp(Store.get(app).settings)
+                    setVolume(v, v)
                     setOnCompletionListener { finish(it) }
                     prepare(); start()
                 }

@@ -142,7 +142,7 @@ class AlarmService : Service() {
                     setDataSource(this@AlarmService, uri)
                     isLooping = true
                     val s0 = Store.get(this@AlarmService).settings
-                    val a0 = Volume.rampAmp(s0, System.currentTimeMillis() - rampAnchor)
+                    val a0 = Volume.rampAmp(Volume.pill(s0), System.currentTimeMillis() - rampAnchor)
                     setVolume(a0, a0)
                     prepare()
                     start()
@@ -174,9 +174,9 @@ class AlarmService : Service() {
         val r = object : Runnable {
             override fun run() {
                 val p = player ?: return
-                val amp = Volume.rampAmp(settings, System.currentTimeMillis() - rampAnchor)
+                val amp = Volume.rampAmp(Volume.pill(settings), System.currentTimeMillis() - rampAnchor)
                 runCatching { p.setVolume(amp, amp) }
-                if (amp < Volume.maxAmp(settings)) handler.postDelayed(this, 10_000)
+                if (amp < Volume.maxAmp(Volume.pill(settings))) handler.postDelayed(this, 10_000)
             }
         }
         rampRunnable = r

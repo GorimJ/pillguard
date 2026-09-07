@@ -42,10 +42,15 @@ cannot substitute its own colours for them.
 
 ## Volume
 
-The alarm starts quiet and climbs to full over 5 minutes, measured from when the dose came due (so
-pressing "I'm going to get the pill" and walking away does not reset it). Settings has the ceiling
-(as a percentage of the phone's alarm volume), the starting level, and the ramp length, with a
-sample button that plays both ends. Meal bugles get louder on the same curve as the repeats go on.
+Pill alarms and meal reminders have separate volume settings — ceiling (as a percentage of the
+phone's alarm volume), starting level, and ramp length. Pills default to 100% / 25% / 5 min; meals
+to a gentler 70% / 30% / 20 min. Each climbs from its start to its ceiling over its ramp: the pill
+alarm measured from when the dose came due (so pressing "GET PILL" and walking away does not reset
+it), the meal bugle from the meal time, so later repeats are louder.
+
+Both are capped by the phone's own alarm-stream volume. That slider is not the ringtone or
+notification one: press a volume key, expand the panel, and set "Alarm" — or just press the volume
+keys while a PillGuard alarm is actually sounding, which adjusts the alarm stream directly.
 
 ## Meal reminders
 

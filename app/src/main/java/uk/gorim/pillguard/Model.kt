@@ -55,6 +55,10 @@ data class Settings(
     val alarmStartVolumePct: Int,
     /** Minutes of ringing over which it climbs from start to full. 0 = full at once. */
     val volumeRampMin: Int,
+    /** Meal reminders have their own, usually gentler, volume. */
+    val mealVolumePct: Int,
+    val mealStartVolumePct: Int,
+    val mealVolumeRampMin: Int,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mealsEnabled", mealsEnabled)
@@ -63,6 +67,9 @@ data class Settings(
         .put("alarmVolumePct", alarmVolumePct)
         .put("alarmStartVolumePct", alarmStartVolumePct)
         .put("volumeRampMin", volumeRampMin)
+        .put("mealVolumePct", mealVolumePct)
+        .put("mealStartVolumePct", mealStartVolumePct)
+        .put("mealVolumeRampMin", mealVolumeRampMin)
         .put("alertsEnabled", alertsEnabled)
         .put("alertTopic", alertTopic)
         .put("alertAfterMin", alertAfterMin)
@@ -108,6 +115,9 @@ data class Settings(
             alarmVolumePct = 100,
             alarmStartVolumePct = 25,
             volumeRampMin = 5,
+            mealVolumePct = 70,
+            mealStartVolumePct = 30,
+            mealVolumeRampMin = 20,
         )
 
         fun fromJson(o: JSONObject, secretIfMissing: String): Settings {
@@ -135,6 +145,9 @@ data class Settings(
                 alarmVolumePct = o.optInt("alarmVolumePct", d.alarmVolumePct),
                 alarmStartVolumePct = o.optInt("alarmStartVolumePct", d.alarmStartVolumePct),
                 volumeRampMin = o.optInt("volumeRampMin", d.volumeRampMin),
+                mealVolumePct = o.optInt("mealVolumePct", d.mealVolumePct),
+                mealStartVolumePct = o.optInt("mealStartVolumePct", d.mealStartVolumePct),
+                mealVolumeRampMin = o.optInt("mealVolumeRampMin", d.mealVolumeRampMin),
             )
         }
     }

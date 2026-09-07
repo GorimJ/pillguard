@@ -111,14 +111,7 @@ class SettingsActivity : AppCompatActivity() {
         mealSoundUri = s.mealSoundUri
         findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked = s.mealsEnabled
         findViewById<Button>(R.id.btnAddMeal).setOnClickListener { editMeal(null) }
-        findViewById<Button>(R.id.btnTestMeal).setOnClickListener {
-            runCatching { previewPlayer?.stop(); previewPlayer?.release() }
-            // Preview whatever is currently selected (saved or not).
-            val saved = store.settings
-            store.settings = saved.copy(mealSoundUri = mealSoundUri)
-            previewPlayer = MealSound.play(this) { previewPlayer = null }
-            store.settings = saved
-        }
+        findViewById<Button>(R.id.btnTestMeal).setOnClickListener { previewMeal() }
         findViewById<Button>(R.id.btnPickMealSound).setOnClickListener {
             val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
                 .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
@@ -129,6 +122,18 @@ class SettingsActivity : AppCompatActivity() {
                 i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(mealSoundUri))
             soundPicker.launch(i)
         }
+        val mealSeek = findViewById<android.widget.SeekBar>(R.id.mealVolSeek)
+        mealSeek.progress = s.mealVolumePct
+        findViewById<TextView>(R.id.mealVolLabel).text = "Meal reminder loudest: ${s.mealVolumePct}%"
+        mealSeek.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar, p: Int, fromUser: Boolean) {
+                findViewById<TextView>(R.id.mealVolLabel).text = "Meal reminder loudest: $p%"
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar) {}
+        })
+        num(R.id.mealVolStart).setText(s.mealStartVolumePct.toString())
+        num(R.id.mealVolRamp).setText(s.mealVolumeRampMin.toString())
         findViewById<Button>(R.id.btnBugle).setOnClickListener { mealSoundUri = ""; renderMealSound() }
         renderMealSound()
         renderMeals()
@@ -176,7 +181,7 @@ class SettingsActivity : AppCompatActivity() {
                 )
                 setDataSource(this@SettingsActivity, uri)
                 isLooping = true
-                val a = Volume.startAmp(probe)
+                val a = Volume.startAmp(Volume.pill(probe))
                 setVolume(a, a)
                 prepare(); start()
             }
@@ -186,12 +191,27 @@ class SettingsActivity : AppCompatActivity() {
         val h = android.os.Handler(android.os.Looper.getMainLooper())
         h.postDelayed({
             previewPlayer?.let { p ->
-                val a = Volume.maxAmp(probe)
+                val a = Volume.maxAmp(Volume.pill(probe))
                 runCatching { p.setVolume(a, a) }
                 Ui.toast(this, "…full volume")
             }
         }, 4_000)
         h.postDelayed({ stopPreview() }, 8_000)
+    }
+
+    /** Plays the meal sound at the meal volume currently on screen (saved or not). */
+    private fun previewMeal() {
+        stopPreview()
+        val saved = store.settings
+        val probe = saved.copy(
+            mealSoundUri = mealSoundUri,
+            mealVolumePct = findViewById<android.widget.SeekBar>(R.id.mealVolSeek).progress.coerceIn(10, 100),
+            mealStartVolumePct = num(R.id.mealVolStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: saved.mealStartVolumePct,
+        )
+        store.settings = probe
+        previewPlayer = MealSound.play(this, Volume.startAmp(Volume.meal(probe))) { previewPlayer = null }
+        store.settings = saved
+        Ui.toast(this, "Playing at the starting volume")
     }
 
     private fun stopPreview() {
@@ -357,6 +377,9 @@ class SettingsActivity : AppCompatActivity() {
             alarmVolumePct = findViewById<android.widget.SeekBar>(R.id.volSeek).progress.coerceIn(10, 100),
             alarmStartVolumePct = num(R.id.volStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: s.alarmStartVolumePct,
             volumeRampMin = num(R.id.volRamp).text.toString().toIntOrNull()?.coerceIn(0, 60) ?: s.volumeRampMin,
+            mealVolumePct = findViewById<android.widget.SeekBar>(R.id.mealVolSeek).progress.coerceIn(10, 100),
+            mealStartVolumePct = num(R.id.mealVolStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: s.mealStartVolumePct,
+            mealVolumeRampMin = num(R.id.mealVolRamp).text.toString().toIntOrNull()?.coerceIn(0, 120) ?: s.mealVolumeRampMin,
             mealsEnabled = findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked,
             meals = mealList.sortedBy { it.minuteOfDay },
             mealSoundUri = mealSoundUri,

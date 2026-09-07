@@ -104,6 +104,30 @@
                 android:text="Back to bugle" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/mealVolLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textSize="17sp"
+            android:text="Meal reminder loudest: 70%" />
+        <SeekBar
+            android:id="@+id/mealVolSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="10"
+            android:max="100"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Start at (% of that)" />
+            <EditText android:id="@+id/mealVolStart" style="@style/SettingsNumber" />
+        </LinearLayout>
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Reach full volume after (minutes)" />
+            <EditText android:id="@+id/mealVolRamp" style="@style/SettingsNumber" />
+        </LinearLayout>
+
         <TextView style="@style/SettingsHeader" android:text="Eating rules" />
         <LinearLayout style="@style/SettingsRow">
             <TextView style="@style/SettingsLabel" android:text="Minutes after a dose before eating" />
@@ -145,7 +169,7 @@
                 android:text="Cancel test alarm" />
         </LinearLayout>
 
-        <TextView style="@style/SettingsHeader" android:text="Volume" />
+        <TextView style="@style/SettingsHeader" android:text="Pill alarm volume" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

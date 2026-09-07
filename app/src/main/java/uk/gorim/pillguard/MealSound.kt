@@ -38,7 +38,7 @@ object MealSound {
                 )
                 setDataSource(app, uri(app))
                 isLooping = false
-                val v = amp ?: Volume.maxAmp(Store.get(app).settings)
+                val v = amp ?: Volume.maxAmp(Volume.meal(Store.get(app).settings))
                 setVolume(v, v)
                 setOnCompletionListener { finish(it) }
                 setOnErrorListener { p, _, _ -> finish(p); true }
@@ -54,7 +54,7 @@ object MealSound {
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
                     )
                     setDataSource(app, bundledUri(app))
-                    val v = amp ?: Volume.maxAmp(Store.get(app).settings)
+                    val v = amp ?: Volume.maxAmp(Volume.meal(Store.get(app).settings))
                     setVolume(v, v)
                     setOnCompletionListener { finish(it) }
                     prepare(); start()

@@ -28,6 +28,30 @@
         <item name="android:navigationBarColor">@color/meal_alarm_bg</item>
     </style>
 
+    <style name="AlarmButtonPrimary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/btn_primary_bg</item>
+        <item name="android:textColor">@color/btn_primary_text</item>
+        <item name="rippleColor">#33000000</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:layout_marginTop">24dp</item>
+    </style>
+
+    <style name="AlarmButtonAlt" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/btn_alt_bg</item>
+        <item name="android:textColor">@color/btn_alt_text_pill</item>
+        <item name="rippleColor">#33000000</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:layout_marginTop">16dp</item>
+    </style>
+
+    <style name="AlarmButtonAlt.Meal">
+        <item name="android:textColor">@color/btn_alt_text_meal</item>
+    </style>
+
     <style name="BigButton" parent="Widget.Material3.Button">
         <item name="android:textSize">22sp</item>
         <item name="android:minHeight">72dp</item>

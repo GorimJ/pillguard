@@ -38,23 +38,19 @@
 
     <Button
         android:id="@+id/btnEating"
-        style="@style/BigButton"
+        style="@style/AlarmButtonPrimary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="150dp"
         android:textSize="34sp"
-        android:backgroundTint="#FFD166"
-        android:textColor="@color/black"
         android:text="OK, I'm eating now" />
 
     <Button
         android:id="@+id/btnLater"
-        style="@style/Widget.Material3.Button.TonalButton"
+        style="@style/AlarmButtonAlt.Meal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:minHeight="80dp"
         android:textSize="24sp"
-        android:textAllCaps="false"
         android:text="Remind me later" />
 </LinearLayout>

@@ -1,17 +1,35 @@
 <resources>
+    <!-- Text/background pairs below are contrast-checked; see contrast notes in the README.
+         Targets are well above the WCAG minimum because the user has poor eyesight. -->
     <color name="brand">#1E5AA8</color>
     <color name="brand_dark">#143F78</color>
-    <color name="ok_green">#1B8A3C</color>
+    <color name="ok_green">#0E5C27</color>        <!-- 7.1:1 on ok_green_bg -->
     <color name="ok_green_bg">#DDF5E3</color>
-    <color name="no_red">#B3261E</color>
+    <color name="no_red">#7A1710</color>          <!-- 8.4:1 on no_red_bg -->
     <color name="no_red_bg">#FBDDDB</color>
-    <color name="warn_amber">#B26A00</color>
+    <color name="warn_amber">#6F4200</color>      <!-- 7.4:1 on warn_amber_bg -->
     <color name="warn_amber_bg">#FFECC7</color>
     <color name="alarm_bg">#0F172A</color>
     <!-- One colour per alarm type, so he knows which alarm it is before reading anything.
          Paired with a different glyph on each screen for red-green colour deficiency. -->
     <color name="pill_alarm_bg">#0B3A8C</color>
     <color name="meal_alarm_bg">#126B33</color>
+    <!-- Solid widget blocks: white text sits on these (8.4:1, 8.9:1, 8.6:1). -->
+    <color name="widget_green">#0F5A25</color>
+    <color name="widget_red">#8F1D16</color>
+    <color name="widget_amber">#6F4200</color>
+
+    <!-- Alarm buttons: fixed colours, not theme-derived, so nothing can override them.
+         Primary  black on amber  14.6:1
+         Alt      navy/green on white  10.5:1 / 8.4:1
+         Hint     #CBD5E1 on blue  7.1:1 -->
+    <color name="btn_primary_bg">#FFD166</color>
+    <color name="btn_primary_text">#000000</color>
+    <color name="btn_alt_bg">#FFFFFF</color>
+    <color name="btn_alt_text_pill">#0B3A8C</color>
+    <color name="btn_alt_text_meal">#0E5A2B</color>
+    <color name="hint_on_dark">#CBD5E1</color>
+
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <!-- Overrides zxing: fully opaque outside the scan window so only the window is "live". -->

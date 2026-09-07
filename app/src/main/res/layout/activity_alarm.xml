@@ -38,25 +38,20 @@
 
     <Button
         android:id="@+id/btnGoing"
-        style="@style/BigButton"
+        style="@style/AlarmButtonPrimary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
         android:minHeight="150dp"
         android:textSize="40sp"
-        android:backgroundTint="#FFD166"
-        android:textColor="@color/black"
         android:text="GET PILL" />
 
     <Button
         android:id="@+id/btnTaking"
-        style="@style/Widget.Material3.Button.TonalButton"
+        style="@style/AlarmButtonAlt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:minHeight="100dp"
         android:textSize="32sp"
-        android:textAllCaps="false"
         android:text="SCAN — taking it" />
 
     <Button
@@ -65,7 +60,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
-        android:textColor="#94A3B8"
+        android:textColor="@color/hint_on_dark"
         android:textSize="16sp"
         android:textAllCaps="false"
         android:text="@string/carer_override" />

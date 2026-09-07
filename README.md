@@ -32,6 +32,14 @@ blue screen with a capsule, meals a green screen with a knife and fork. The glyp
 the colour — dark blue against dark green is the pair red-green colour deficiency hits hardest. The
 heads-up notifications carry the same colours.
 
+## Contrast
+
+Every text/background pair on the alarm, meal, main and widget surfaces is contrast-checked; the
+lowest ratio anywhere is 5.45:1, against a WCAG AA minimum of 4.5:1 for body text and 3:1 for large
+text. Alarm button colours are set in explicit styles using `backgroundTint` (the app-namespace
+attribute MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme
+cannot substitute its own colours for them.
+
 ## Volume
 
 The alarm starts quiet and climbs to full over 5 minutes, measured from when the dose came due (so

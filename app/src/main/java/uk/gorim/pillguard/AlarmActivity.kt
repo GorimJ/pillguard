@@ -57,9 +57,12 @@ class AlarmActivity : AppCompatActivity() {
             else cameraPermission.launch(android.Manifest.permission.CAMERA)
         }
         findViewById<Button>(R.id.btnGoing).setOnClickListener {
+            val mins = Store.get(this).settings.reRingMin
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_SNOOZE))
             // Stay on screen: he needs Scan in front of him when he gets back with the container.
-            showQuietCountdown()
+            // Drive the countdown from our own clock — the service writes snoozeUntil a moment
+            // later, and reading it straight away finds the old value and ends the countdown at once.
+            showQuietCountdown(System.currentTimeMillis() + mins * 60_000L)
         }
         findViewById<android.widget.ImageButton>(R.id.btnDelay).setOnClickListener { confirmDelay() }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
@@ -87,7 +90,8 @@ class AlarmActivity : AppCompatActivity() {
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
-        if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown()
+        if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown(store.snoozeUntil)
+        else if (quietTick == null) endQuietCountdown()
         // Fade the triangle once both delays are used, rather than hiding it — a control that
         // vanishes mid-alarm is more confusing than one that says no.
         findViewById<android.widget.ImageButton>(R.id.btnDelay).alpha = if (inst.canDelay) 1f else 0.35f
@@ -108,28 +112,43 @@ class AlarmActivity : AppCompatActivity() {
      * While the alarm is quiet after "Get pill", that button becomes a live countdown and Scan
      * stays ready. When the quiet runs out the alarm restarts and the button comes back.
      */
-    private fun showQuietCountdown() {
+    private fun showQuietCountdown(until: Long) {
         val going = findViewById<Button>(R.id.btnGoing)
+        val bar = findViewById<android.widget.LinearLayout>(R.id.waitingBar)
         quietTick?.let { handler.removeCallbacks(it) }
+
+        bar.visibility = android.view.View.VISIBLE
+        going.isEnabled = false
+        going.backgroundTintList =
+            android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, R.color.btn_waiting_bg))
+        going.setTextColor(ContextCompat.getColor(this, R.color.white))
+
         val tick = object : Runnable {
             override fun run() {
-                val left = Store.get(this@AlarmActivity).snoozeUntil - System.currentTimeMillis()
+                val left = until - System.currentTimeMillis()
                 if (left > 0) {
-                    val total = (left / 1000).toInt()
-                    going.isEnabled = false
-                    going.alpha = 0.45f
-                    going.text = String.format("Quiet %d:%02d", total / 60, total % 60)
+                    val total = ((left + 999) / 1000).toInt()
+                    going.text = String.format("%d:%02d", total / 60, total % 60)
                     handler.postDelayed(this, 500)
                 } else {
-                    going.isEnabled = true
-                    going.alpha = 1f
-                    going.text = "Get pill"
-                    quietTick = null
+                    endQuietCountdown()
                 }
             }
         }
         quietTick = tick
         handler.post(tick)
+    }
+
+    private fun endQuietCountdown() {
+        quietTick?.let { handler.removeCallbacks(it) }
+        quietTick = null
+        findViewById<android.widget.LinearLayout>(R.id.waitingBar).visibility = android.view.View.GONE
+        val going = findViewById<Button>(R.id.btnGoing)
+        going.isEnabled = true
+        going.backgroundTintList =
+            android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, R.color.btn_primary_bg))
+        going.setTextColor(ContextCompat.getColor(this, R.color.btn_primary_text))
+        going.text = "Get pill"
     }
 
     /** Silences the alarm for a minute so he can act without the noise (appointment, cinema). */

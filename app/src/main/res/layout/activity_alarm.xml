@@ -17,6 +17,34 @@
         android:paddingTop="88dp"
         android:paddingBottom="16dp">
 
+        <!-- Shown only while the alarm is quiet after "Get pill". -->
+        <LinearLayout
+            android:id="@+id/waitingBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/waitingSpinner"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:text="Getting pills…"
+                android:textColor="@color/white"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/alarmTime"
             android:layout_width="match_parent"

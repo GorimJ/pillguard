@@ -29,6 +29,9 @@
     <color name="btn_alt_text_pill">#0B3A8C</color>
     <color name="btn_alt_text_meal">#0E5A2B</color>
     <color name="hint_on_dark">#CBD5E1</color>
+    <!-- "Waiting" state for the Get pill button: reads as inactive against the blue (1.4:1) while
+         its countdown stays legible (white at 7.5:1). -->
+    <color name="btn_waiting_bg">#4A5568</color>
 
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>

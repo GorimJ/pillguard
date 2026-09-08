@@ -40,6 +40,7 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var rampRunnable: Runnable? = null
     private var resumeRunnable: Runnable? = null
+    private var pauseUntilElapsed = 0L
     private var rampAnchor = 0L
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
@@ -194,6 +195,10 @@ class AlarmService : Service() {
         handler.postDelayed(r, 10_000)
     }
 
+    /**
+     * "I'm going to get the pill": go quiet for reRingMin but keep the alarm screen and the
+     * notification up, so Scan is still in front of him when he comes back with the container.
+     */
     private fun snooze(auto: Boolean) {
         val store = Store.get(this)
         val key = ringingKey ?: store.ringingKey
@@ -202,9 +207,10 @@ class AlarmService : Service() {
             if (!auto) AlarmScheduler.scheduleTest(this, store.settings.reRingMin * 60_000L)
             return
         }
+        // recordSnooze also stamps snoozeUntil, which the screen reads for its countdown and
+        // AlarmScheduler falls back on if this process is killed while quiet.
         if (key != null) store.recordSnooze(key, store.settings.reRingMin, auto)
-        stopRinging()
-        AlarmScheduler.reschedule(this)
+        pauseFor(store.settings.reRingMin * 60)
     }
 
     /** Silences the sound and vibration but keeps the alarm alive (service, notification, key). */
@@ -221,6 +227,10 @@ class AlarmService : Service() {
      */
     private fun pauseFor(seconds: Int) {
         val k = ringingKey ?: return
+        val until = android.os.SystemClock.elapsedRealtime() + seconds * 1_000L
+        // A short reprieve must not shorten a longer quiet already running.
+        if (resumeRunnable != null && until <= pauseUntilElapsed) return
+        pauseUntilElapsed = until
         stopSound()
         Store.get(this).log("${Store.get(this).labelFor(k)} alarm quiet for ${seconds}s while he deals with it")
         resumeRunnable?.let { handler.removeCallbacks(it) }

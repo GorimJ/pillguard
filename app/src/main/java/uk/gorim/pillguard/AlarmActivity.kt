@@ -18,6 +18,7 @@ class AlarmActivity : AppCompatActivity() {
     private var countdown: Runnable? = null
     /** True while the confirm screen is still holding — Back is ignored during this. */
     private var confirmHeld = false
+    private var quietTick: Runnable? = null
 
     companion object {
         /** Seconds the "yes" is held before it can be pressed. */
@@ -57,8 +58,8 @@ class AlarmActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnGoing).setOnClickListener {
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_SNOOZE))
-            Ui.toast(this, "Rings again in ${Store.get(this).settings.reRingMin} min")
-            finish()
+            // Stay on screen: he needs Scan in front of him when he gets back with the container.
+            showQuietCountdown()
         }
         findViewById<android.widget.ImageButton>(R.id.btnDelay).setOnClickListener { confirmDelay() }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
@@ -85,6 +86,7 @@ class AlarmActivity : AppCompatActivity() {
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
+        if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown()
         // Fade the triangle once both delays are used, rather than hiding it — a control that
         // vanishes mid-alarm is more confusing than one that says no.
         findViewById<android.widget.ImageButton>(R.id.btnDelay).alpha = if (inst.canDelay) 1f else 0.35f
@@ -99,6 +101,34 @@ class AlarmActivity : AppCompatActivity() {
         if (k == AlarmScheduler.TEST_KEY) return
         val inst = Store.get(this).engine().window(System.currentTimeMillis()).firstOrNull { it.key == k }
         if (inst == null || inst.status != DoseStatus.PENDING) finish()
+    }
+
+    /**
+     * While the alarm is quiet after "Get pill", that button becomes a live countdown and Scan
+     * stays ready. When the quiet runs out the alarm restarts and the button comes back.
+     */
+    private fun showQuietCountdown() {
+        val going = findViewById<Button>(R.id.btnGoing)
+        quietTick?.let { handler.removeCallbacks(it) }
+        val tick = object : Runnable {
+            override fun run() {
+                val left = Store.get(this@AlarmActivity).snoozeUntil - System.currentTimeMillis()
+                if (left > 0) {
+                    val total = (left / 1000).toInt()
+                    going.isEnabled = false
+                    going.alpha = 0.45f
+                    going.text = String.format("Quiet %d:%02d", total / 60, total % 60)
+                    handler.postDelayed(this, 500)
+                } else {
+                    going.isEnabled = true
+                    going.alpha = 1f
+                    going.text = "Get pill"
+                    quietTick = null
+                }
+            }
+        }
+        quietTick = tick
+        handler.post(tick)
     }
 
     /** Silences the alarm for a minute so he can act without the noise (appointment, cinema). */
@@ -218,6 +248,7 @@ class AlarmActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         countdown?.let { handler.removeCallbacks(it) }
+        quietTick?.let { handler.removeCallbacks(it) }
         super.onDestroy()
     }
 }

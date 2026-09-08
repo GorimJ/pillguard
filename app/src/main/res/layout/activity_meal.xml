@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:minHeight="150dp"
         android:textSize="34sp"
-        android:text="OK, I'm eating now" />
+        android:text="OK, I am eating now" />
 
     <Button
         android:id="@+id/btnLater"

@@ -50,6 +50,7 @@ class AlarmActivity : AppCompatActivity() {
             Ui.toast(this, "Rings again in ${Store.get(this).settings.reRingMin} min")
             finish()
         }
+        findViewById<android.widget.ImageButton>(R.id.btnDelay).setOnClickListener { confirmDelay() }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
             Ui.askPin(this, "Carer override — enter PIN") { key?.let { k -> confirm(k, "override") } }
         }
@@ -67,14 +68,16 @@ class AlarmActivity : AppCompatActivity() {
         key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: store.ringingKey
         val k = key
         if (k == AlarmScheduler.TEST_KEY) {
-            findViewById<TextView>(R.id.alarmTitle).text = "TEST"
             findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(System.currentTimeMillis())
+            findViewById<android.widget.ImageButton>(R.id.btnDelay).visibility = android.view.View.GONE
             return
         }
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
-        findViewById<TextView>(R.id.alarmTitle).text = "${inst.label.uppercase()} PILLS"
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
+        // Fade the triangle once both delays are used, rather than hiding it — a control that
+        // vanishes mid-alarm is more confusing than one that says no.
+        findViewById<android.widget.ImageButton>(R.id.btnDelay).alpha = if (inst.canDelay) 1f else 0.35f
     }
 
     override fun onResume() {
@@ -86,6 +89,43 @@ class AlarmActivity : AppCompatActivity() {
         if (k == AlarmScheduler.TEST_KEY) return
         val inst = Store.get(this).engine().window(System.currentTimeMillis()).firstOrNull { it.key == k }
         if (inst == null || inst.status != DoseStatus.PENDING) finish()
+    }
+
+    /** Red triangle: an hour's delay, twice at most, and the carer is told loudly each time. */
+    private fun confirmDelay() {
+        val k = key ?: return
+        if (k == AlarmScheduler.TEST_KEY) return
+        val store = Store.get(this)
+        val now = System.currentTimeMillis()
+        val inst = store.engine().window(now).firstOrNull { it.key == k } ?: return
+        if (!inst.canDelay) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Already delayed twice")
+                .setMessage("This dose cannot be put off again. Please take your pills, or use the carer override.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Put off for an hour?")
+            .setMessage(
+                "The alarm will come back at ${TimeFmt.hm(now + 3_600_000L)}.\n\n" +
+                    "This is delay ${inst.delays + 1} of ${DoseRecord.MAX_DELAYS}. Your carer will be told."
+            )
+            .setPositiveButton("Yes, put it off") { _, _ -> doDelay(k) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun doDelay(k: String) {
+        val store = Store.get(this)
+        val before = store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == k }
+        val newTime = store.delayDose(k) ?: return
+        val clash = before?.let { store.engine().crowdsFollowing(it, newTime, System.currentTimeMillis()) }
+        Alerts.onDelayed(this, k, newTime, (before?.delays ?: 0) + 1, clash)
+        startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))
+        AlarmScheduler.reschedule(this)
+        Ui.toast(this, "Alarm moved to ${TimeFmt.hm(newTime)}")
+        finish()
     }
 
     private fun confirm(k: String, method: String) {

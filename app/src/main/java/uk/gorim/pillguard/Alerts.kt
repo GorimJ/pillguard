@@ -57,6 +57,17 @@ object Alerts {
         )
     }
 
+    /** Red-triangle delay: always a loud ping, this is the one action that defers a dose. */
+    fun onDelayed(ctx: Context, key: String, newTime: Long, delayNo: Int, clash: DoseInstance?) {
+        val store = Store.get(ctx)
+        if (!store.settings.alertsEnabled) return
+        val label = store.labelFor(key)
+        val body = StringBuilder("Pushed back to ${TimeFmt.hm(newTime)}. Delay $delayNo of ${DoseRecord.MAX_DELAYS}")
+        body.append(if (delayNo >= DoseRecord.MAX_DELAYS) " — no more delays allowed." else ".")
+        clash?.let { body.append("\nThis now sits close to the ${it.label.lowercase()} dose at ${TimeFmt.hm(it.effectiveMillis)}.") }
+        send(ctx, "$label medication DELAYED an hour", body.toString(), priority = 5)
+    }
+
     /** Called after every dose confirmation: a quiet "taken" note, louder if an alert had gone out first. */
     fun onTaken(ctx: Context, key: String, method: String) {
         val store = Store.get(ctx)

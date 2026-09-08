@@ -169,6 +169,22 @@ class Store private constructor(ctx: Context) {
         log("${labelFor(key)} dose confirmation undone by carer — alarm re-enabled")
     }
 
+    /**
+     * Red-triangle delay: pushes this dose an hour from now, at most [DoseRecord.MAX_DELAYS] times.
+     * Returns the new time, or null if the limit is already reached.
+     */
+    fun delayDose(key: String, hours: Int = 1): Long? {
+        val used = records[key]?.delays ?: 0
+        if (used >= DoseRecord.MAX_DELAYS) return null
+        val newTime = System.currentTimeMillis() + hours * 3_600_000L
+        updateRecord(key) {
+            it.copy(shiftedTo = newTime, shiftReason = "delayed ${used + 1}h by user", delays = used + 1)
+        }
+        if (ringingKey == key) { ringingKey = null; snoozeUntil = 0 }
+        log("${labelFor(key)} dose delayed 1 hour to ${TimeFmt.hm(newTime)} (delay ${used + 1} of ${DoseRecord.MAX_DELAYS})")
+        return newTime
+    }
+
     fun markMissed(key: String) {
         updateRecord(key) { if (it.takenAt > 0) it else it.copy(missed = true) }
         log("${labelFor(key)} dose MISSED")

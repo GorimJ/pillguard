@@ -167,13 +167,19 @@ data class DoseRecord(
     val snoozes: Int = 0,
     /** A "not confirmed" alert was sent to the carer for this dose. */
     val alerted: Boolean = false,
+    /** Times the red triangle has pushed this dose back an hour. Capped at MAX_DELAYS. */
+    val delays: Int = 0,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("key", key).put("shiftedTo", shiftedTo).put("shiftReason", shiftReason)
         .put("takenAt", takenAt).put("method", method).put("missed", missed).put("snoozes", snoozes)
         .put("alerted", alerted)
+        .put("delays", delays)
 
     companion object {
+        /** An hour's delay is an escape hatch, not a routine; two is the most allowed. */
+        const val MAX_DELAYS = 2
+
         fun fromJson(o: JSONObject) = DoseRecord(
             key = o.getString("key"),
             shiftedTo = o.optLong("shiftedTo", 0),
@@ -183,6 +189,7 @@ data class DoseRecord(
             missed = o.optBoolean("missed", false),
             snoozes = o.optInt("snoozes", 0),
             alerted = o.optBoolean("alerted", false),
+            delays = o.optInt("delays", 0),
         )
     }
 }
@@ -199,7 +206,9 @@ data class DoseInstance(
     val status: DoseStatus,
     val snoozes: Int,
     val shiftReason: String,
+    val delays: Int = 0,
 ) {
+    val canDelay get() = delays < DoseRecord.MAX_DELAYS
     val isShifted get() = effectiveMillis != scheduledMillis
 }
 

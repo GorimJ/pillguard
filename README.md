@@ -9,7 +9,8 @@ Rules built in (all editable in Settings, behind the carer PIN):
 - Eating must finish 90 min before the next dose.
 - "I ate something" pushes the *next* dose only, to at least 90 min after the meal.
 - The alarm screen shows the dose time and two buttons — "Get pill" (quiet for 2 min, then rings again) and "Scan". It never stops ringing on its own, and repeats every 2 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
-- A red warning triangle in the top-right puts the dose off by an hour, at most twice per dose, with a loud ntfy ping to the carer each time. It sits top-right because the system accessibility button lives bottom-right. Confirming is a full-screen screen with two large buttons, and the "yes" is held for 3 seconds so a stray second tap on the triangle cannot carry through.
+- A red warning triangle in the top-right puts the dose off by an hour, at most twice per dose, with a loud ntfy ping to the carer each time. It sits top-right because the system accessibility button lives bottom-right. Confirming is a full screen with two large buttons; the "yes" is held for 3 seconds, and Back is inert for that same hold so a panicked jab at it cannot bounce him back to a ringing alarm.
+- Opening the scanner or the delay screen silences the alarm for 60 seconds — room to deal with it in an appointment or a cinema without the noise. If the dose is still unconfirmed when the minute is up, the alarm resumes at whatever level the ramp has reached.
 - A manual scan from the main screen only counts as a dose if one is due or the next is within 60 minutes; otherwise it is just logged.
 - History shows a day-by-day diary and can share it as text or CSV.
 - An untaken dose is logged as missed once the following dose becomes due.

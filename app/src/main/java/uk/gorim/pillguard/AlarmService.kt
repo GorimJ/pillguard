@@ -29,12 +29,17 @@ class AlarmService : Service() {
         const val ACTION_START = "start"
         const val ACTION_STOP = "stop"
         const val ACTION_SNOOZE = "snooze"
+        const val ACTION_PAUSE = "pause"
+        const val EXTRA_PAUSE_SECONDS = "pauseSeconds"
+        /** Breathing space while he opens the scanner or the delay screen — long enough to act. */
+        const val DEFAULT_PAUSE_SECONDS = 60
         @Volatile var ringingKey: String? = null
             private set
     }
 
     private val handler = Handler(Looper.getMainLooper())
     private var rampRunnable: Runnable? = null
+    private var resumeRunnable: Runnable? = null
     private var rampAnchor = 0L
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
@@ -46,6 +51,10 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_STOP -> { stopRinging(); return START_NOT_STICKY }
             ACTION_SNOOZE -> { snooze(auto = false); return START_NOT_STICKY }
+            ACTION_PAUSE -> {
+                pauseFor(intent.getIntExtra(EXTRA_PAUSE_SECONDS, DEFAULT_PAUSE_SECONDS))
+                return START_NOT_STICKY
+            }
         }
         // A null intent means the system restarted us; the armed AlarmManager alarm is the source of truth, so just stop.
         val key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY)
@@ -122,7 +131,9 @@ class AlarmService : Service() {
     private fun startRinging() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         // No timeout: the alarm rings until someone interacts with it. Released in releaseRinging().
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire() }
+        if (wakeLock?.isHeld != true) {
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire() }
+        }
 
         val candidates = listOfNotNull(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
@@ -196,12 +207,36 @@ class AlarmService : Service() {
         AlarmScheduler.reschedule(this)
     }
 
-    private fun releaseRinging() {
+    /** Silences the sound and vibration but keeps the alarm alive (service, notification, key). */
+    private fun stopSound() {
         rampRunnable?.let { handler.removeCallbacks(it) }
         rampRunnable = null
-        rampAnchor = 0L
         runCatching { player?.stop() }; runCatching { player?.release() }; player = null
         runCatching { vibrator?.cancel() }
+    }
+
+    /**
+     * Goes quiet for [seconds] while he deals with it — opening the scanner, or the delay screen —
+     * then picks up again if the dose is still unconfirmed. Nothing else about the alarm changes.
+     */
+    private fun pauseFor(seconds: Int) {
+        val k = ringingKey ?: return
+        stopSound()
+        Store.get(this).log("${Store.get(this).labelFor(k)} alarm quiet for ${seconds}s while he deals with it")
+        resumeRunnable?.let { handler.removeCallbacks(it) }
+        val r = Runnable {
+            resumeRunnable = null
+            if (ringingKey != null) startRinging()   // still unconfirmed: back on, at the ramped level
+        }
+        resumeRunnable = r
+        handler.postDelayed(r, seconds * 1_000L)
+    }
+
+    private fun releaseRinging() {
+        resumeRunnable?.let { handler.removeCallbacks(it) }
+        resumeRunnable = null
+        stopSound()
+        rampAnchor = 0L
         runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
         wakeLock = null
         ringingKey = null

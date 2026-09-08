@@ -16,6 +16,8 @@ class AlarmActivity : AppCompatActivity() {
     private var key: String? = null
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var countdown: Runnable? = null
+    /** True while the confirm screen is still holding — Back is ignored during this. */
+    private var confirmHeld = false
 
     companion object {
         /** Seconds the "yes" is held before it can be pressed. */
@@ -48,6 +50,7 @@ class AlarmActivity : AppCompatActivity() {
         setContentView(R.layout.activity_alarm)
 
         findViewById<Button>(R.id.btnTaking).setOnClickListener {
+            reprieve()
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
                 Ui.launchScan(scanLauncher)
             else cameraPermission.launch(android.Manifest.permission.CAMERA)
@@ -98,6 +101,15 @@ class AlarmActivity : AppCompatActivity() {
         if (inst == null || inst.status != DoseStatus.PENDING) finish()
     }
 
+    /** Silences the alarm for a minute so he can act without the noise (appointment, cinema). */
+    private fun reprieve() {
+        startService(
+            Intent(this, AlarmService::class.java)
+                .setAction(AlarmService.ACTION_PAUSE)
+                .putExtra(AlarmService.EXTRA_PAUSE_SECONDS, AlarmService.DEFAULT_PAUSE_SECONDS)
+        )
+    }
+
     /** Red triangle: an hour's delay, twice at most, and the carer is told loudly each time. */
     private fun confirmDelay() {
         val k = key ?: return
@@ -106,6 +118,7 @@ class AlarmActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         val inst = store.engine().window(now).firstOrNull { it.key == k } ?: return
 
+        reprieve()
         val panel = findViewById<android.widget.LinearLayout>(R.id.delayConfirm)
         val yes = findViewById<Button>(R.id.btnDelayYes)
         val no = findViewById<Button>(R.id.btnDelayNo)
@@ -116,6 +129,7 @@ class AlarmActivity : AppCompatActivity() {
             yes.visibility = android.view.View.GONE
             no.text = "Back to the alarm"
             no.setOnClickListener { hideDelayPanel() }
+            confirmHeld = false
             panel.visibility = android.view.View.VISIBLE
             return
         }
@@ -132,6 +146,7 @@ class AlarmActivity : AppCompatActivity() {
         // Hold the "yes" for a few seconds so a stray second tap cannot carry through.
         yes.isEnabled = false
         yes.alpha = 0.4f
+        confirmHeld = true
         yes.setOnClickListener { hideDelayPanel(); doDelay(k) }
         countdown?.let { handler.removeCallbacks(it) }
         var left = DELAY_CONFIRM_HOLD_S
@@ -145,6 +160,7 @@ class AlarmActivity : AppCompatActivity() {
                     yes.text = "Yes, put it off"
                     yes.isEnabled = true
                     yes.alpha = 1f
+                    confirmHeld = false
                 }
             }
         }
@@ -155,6 +171,7 @@ class AlarmActivity : AppCompatActivity() {
     private fun hideDelayPanel() {
         countdown?.let { handler.removeCallbacks(it) }
         countdown = null
+        confirmHeld = false
         findViewById<android.widget.LinearLayout>(R.id.delayConfirm).visibility = android.view.View.GONE
     }
 
@@ -189,7 +206,12 @@ class AlarmActivity : AppCompatActivity() {
     @Suppress("MissingSuperCall")
     override fun onBackPressed() {
         val panel = findViewById<android.widget.LinearLayout>(R.id.delayConfirm)
-        if (panel.visibility == android.view.View.VISIBLE) { hideDelayPanel(); return }
+        if (panel.visibility == android.view.View.VISIBLE) {
+            // Back is deliberately inert while the choice is still held, so a panicked jab at it
+            // does not bounce him straight back to a ringing alarm.
+            if (!confirmHeld) hideDelayPanel()
+            return
+        }
         // Back does not dismiss the alarm; the alarm keeps ringing and the notification stays.
         moveTaskToBack(true)
     }

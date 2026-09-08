@@ -74,6 +74,11 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnAte).setOnClickListener { askMealTime() }
         findViewById<Button>(R.id.btnScanNow).setOnClickListener {
+            if (AlarmService.ringingKey != null) startService(
+                Intent(this, AlarmService::class.java)
+                    .setAction(AlarmService.ACTION_PAUSE)
+                    .putExtra(AlarmService.EXTRA_PAUSE_SECONDS, AlarmService.DEFAULT_PAUSE_SECONDS)
+            )
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                 Ui.launchScan(scanLauncher) else cameraPermission.launch(Manifest.permission.CAMERA)
         }

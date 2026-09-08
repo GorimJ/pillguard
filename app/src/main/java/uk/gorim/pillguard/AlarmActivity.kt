@@ -14,6 +14,13 @@ import com.journeyapps.barcodescanner.ScanContract
 /** Full-screen alarm UI shown over the lock screen. */
 class AlarmActivity : AppCompatActivity() {
     private var key: String? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var countdown: Runnable? = null
+
+    companion object {
+        /** Seconds the "yes" is held before it can be pressed. */
+        const val DELAY_CONFIRM_HOLD_S = 3
+    }
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         val store = Store.get(this)
@@ -98,22 +105,57 @@ class AlarmActivity : AppCompatActivity() {
         val store = Store.get(this)
         val now = System.currentTimeMillis()
         val inst = store.engine().window(now).firstOrNull { it.key == k } ?: return
+
+        val panel = findViewById<android.widget.LinearLayout>(R.id.delayConfirm)
+        val yes = findViewById<Button>(R.id.btnDelayYes)
+        val no = findViewById<Button>(R.id.btnDelayNo)
+
         if (!inst.canDelay) {
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Already delayed twice")
-                .setMessage("This dose cannot be put off again. Please take your pills, or use the carer override.")
-                .setPositiveButton("OK", null).show()
+            findViewById<TextView>(R.id.delayNewTime).text = "Already put off twice"
+            findViewById<TextView>(R.id.delayCount).text = "Please take your pills, or ask your carer."
+            yes.visibility = android.view.View.GONE
+            no.text = "Back to the alarm"
+            no.setOnClickListener { hideDelayPanel() }
+            panel.visibility = android.view.View.VISIBLE
             return
         }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Put off for an hour?")
-            .setMessage(
-                "The alarm will come back at ${TimeFmt.hm(now + 3_600_000L)}.\n\n" +
-                    "This is delay ${inst.delays + 1} of ${DoseRecord.MAX_DELAYS}. Your carer will be told."
-            )
-            .setPositiveButton("Yes, put it off") { _, _ -> doDelay(k) }
-            .setNegativeButton("Cancel", null)
-            .show()
+
+        val newTime = now + 3_600_000L
+        findViewById<TextView>(R.id.delayNewTime).text = "Alarm comes back at ${TimeFmt.hm(newTime)}"
+        findViewById<TextView>(R.id.delayCount).text =
+            "Delay ${inst.delays + 1} of ${DoseRecord.MAX_DELAYS}. Your carer will be told."
+        yes.visibility = android.view.View.VISIBLE
+        no.text = "No, keep it"
+        no.setOnClickListener { hideDelayPanel() }
+        panel.visibility = android.view.View.VISIBLE
+
+        // Hold the "yes" for a few seconds so a stray second tap cannot carry through.
+        yes.isEnabled = false
+        yes.alpha = 0.4f
+        yes.setOnClickListener { hideDelayPanel(); doDelay(k) }
+        countdown?.let { handler.removeCallbacks(it) }
+        var left = DELAY_CONFIRM_HOLD_S
+        val tick = object : Runnable {
+            override fun run() {
+                if (left > 0) {
+                    yes.text = "Yes — wait $left"
+                    left--
+                    handler.postDelayed(this, 1_000)
+                } else {
+                    yes.text = "Yes, put it off"
+                    yes.isEnabled = true
+                    yes.alpha = 1f
+                }
+            }
+        }
+        countdown = tick
+        handler.post(tick)
+    }
+
+    private fun hideDelayPanel() {
+        countdown?.let { handler.removeCallbacks(it) }
+        countdown = null
+        findViewById<android.widget.LinearLayout>(R.id.delayConfirm).visibility = android.view.View.GONE
     }
 
     private fun doDelay(k: String) {
@@ -146,7 +188,14 @@ class AlarmActivity : AppCompatActivity() {
 
     @Suppress("MissingSuperCall")
     override fun onBackPressed() {
+        val panel = findViewById<android.widget.LinearLayout>(R.id.delayConfirm)
+        if (panel.visibility == android.view.View.VISIBLE) { hideDelayPanel(); return }
         // Back does not dismiss the alarm; the alarm keeps ringing and the notification stays.
         moveTaskToBack(true)
+    }
+
+    override fun onDestroy() {
+        countdown?.let { handler.removeCallbacks(it) }
+        super.onDestroy()
     }
 }

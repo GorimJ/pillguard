@@ -58,6 +58,70 @@
             android:text="@string/carer_override" />
     </LinearLayout>
 
+    <!-- Full-screen delay confirmation. Same big-target language as the alarm itself; the
+         "yes" is held for a few seconds so a stray double-tap on the triangle cannot get through. -->
+    <LinearLayout
+        android:id="@+id/delayConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp"
+        android:background="@color/pill_alarm_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Put the pills off\nfor an hour?"
+            android:textColor="@color/white"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/delayNewTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Alarm comes back at 08:00"
+            android:textColor="#FFD166"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/delayCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Delay 1 of 2. Your carer will be told."
+            android:textColor="@color/hint_on_dark"
+            android:textSize="20sp"
+            android:gravity="center" />
+
+        <Button
+            android:id="@+id/btnDelayNo"
+            style="@style/AlarmButtonAlt"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="28dp"
+            android:textSize="40sp"
+            android:text="No, keep it" />
+
+        <Button
+            android:id="@+id/btnDelayYes"
+            style="@style/AlarmButtonPrimary"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:textSize="40sp"
+            android:text="Yes, put it off" />
+    </LinearLayout>
+
     <ImageButton
         android:id="@+id/btnDelay"
         android:layout_width="76dp"

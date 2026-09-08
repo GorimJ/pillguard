@@ -80,7 +80,8 @@ class AlarmActivity : AppCompatActivity() {
         val k = key
         if (k == AlarmScheduler.TEST_KEY) {
             findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(System.currentTimeMillis())
-            findViewById<android.widget.ImageButton>(R.id.btnDelay).visibility = android.view.View.GONE
+            // The triangle stays: a test you cannot rehearse the delay on is not much of a test.
+            findViewById<android.widget.ImageButton>(R.id.btnDelay).alpha = 1f
             return
         }
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
@@ -143,17 +144,34 @@ class AlarmActivity : AppCompatActivity() {
     /** Red triangle: an hour's delay, twice at most, and the carer is told loudly each time. */
     private fun confirmDelay() {
         val k = key ?: return
-        if (k == AlarmScheduler.TEST_KEY) return
         val store = Store.get(this)
         val now = System.currentTimeMillis()
-        val inst = store.engine().window(now).firstOrNull { it.key == k } ?: return
+        val isTest = k == AlarmScheduler.TEST_KEY
+        val inst = if (isTest) null else store.engine().window(now).firstOrNull { it.key == k } ?: return
 
         reprieve()
         val panel = findViewById<android.widget.LinearLayout>(R.id.delayConfirm)
         val yes = findViewById<Button>(R.id.btnDelayYes)
         val no = findViewById<Button>(R.id.btnDelayNo)
 
-        if (!inst.canDelay) {
+        if (isTest) {
+            findViewById<TextView>(R.id.delayNewTime).text = "This is only a test"
+            findViewById<TextView>(R.id.delayCount).text =
+                "On a real alarm this puts the pills off an hour and tells your carer. Nothing happens now."
+            yes.visibility = android.view.View.VISIBLE
+            no.text = "No, keep it"
+            no.setOnClickListener { hideDelayPanel() }
+            panel.visibility = android.view.View.VISIBLE
+            holdThenEnable(yes) {
+                hideDelayPanel()
+                AlarmScheduler.cancelTest(this)
+                Ui.toast(this, "Test alarm cleared — the delay works.")
+                finish()
+            }
+            return
+        }
+
+        if (!inst!!.canDelay) {
             findViewById<TextView>(R.id.delayNewTime).text = "Already put off twice"
             findViewById<TextView>(R.id.delayCount).text = "Please take your pills, or ask your carer."
             yes.visibility = android.view.View.GONE
@@ -173,11 +191,15 @@ class AlarmActivity : AppCompatActivity() {
         no.setOnClickListener { hideDelayPanel() }
         panel.visibility = android.view.View.VISIBLE
 
-        // Hold the "yes" for a few seconds so a stray second tap cannot carry through.
+        holdThenEnable(yes) { hideDelayPanel(); doDelay(k) }
+    }
+
+    /** Holds a button disabled for a few seconds, counting down on its own label, then arms it. */
+    private fun holdThenEnable(yes: Button, onPress: () -> Unit) {
         yes.isEnabled = false
         yes.alpha = 0.4f
         confirmHeld = true
-        yes.setOnClickListener { hideDelayPanel(); doDelay(k) }
+        yes.setOnClickListener { onPress() }
         countdown?.let { handler.removeCallbacks(it) }
         var left = DELAY_CONFIRM_HOLD_S
         val tick = object : Runnable {

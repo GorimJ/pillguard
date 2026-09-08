@@ -43,12 +43,18 @@ class Store private constructor(ctx: Context) {
         }
         set(v) = prefs.edit().putString(K_SETTINGS, v.toJson().toString()).apply()
 
-    /** One-off: the unconfirmed-dose alert moved from 30 to 15 minutes; carry existing installs across. */
+    /** One-off default changes carried across to installs that already have settings saved. */
     fun migrate() {
         if (!prefs.getBoolean("mig_alert15", false)) {
             val s = settings
             if (s.alertAfterMin == 30) settings = s.copy(alertAfterMin = 15)
             prefs.edit().putBoolean("mig_alert15", true).apply()
+        }
+        // Two minutes was not long enough to fetch the pills and get back to the phone.
+        if (!prefs.getBoolean("mig_rering3", false)) {
+            val s = settings
+            if (s.reRingMin == 2) settings = s.copy(reRingMin = 3)
+            prefs.edit().putBoolean("mig_rering3", true).apply()
         }
     }
 

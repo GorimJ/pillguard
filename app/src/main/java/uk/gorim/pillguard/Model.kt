@@ -102,7 +102,7 @@ data class Settings(
             eatAfterMin = 30,
             eatBeforeMin = 90,
             snoozeMin = 5,
-            reRingMin = 2,
+            reRingMin = 3,
             ringTimeoutMin = 2,
             pin = "",
             qrSecret = secret,

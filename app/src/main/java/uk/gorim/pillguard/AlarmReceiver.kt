@@ -37,22 +37,28 @@ class AlarmReceiver : BroadcastReceiver() {
                     val late = ((now - d.mealMillis) / 60_000).toInt()
                     val text = (if (late >= 5) "${d.label} was at ${TimeFmt.hm(d.mealMillis)} — $late min ago. " else "") +
                         st.detail + "\nTap \"Eating now\" once you start, or \"Not today\" to stop these until tomorrow."
-                    Notifications.meal(ctx, key, d.label, text)
-                    runCatching { ctx.startActivity(Notifications.mealActivityIntent(ctx, key, d.label)) }
                     store.log("${d.label} reminder rang")
-                    runCatching {
-                        val v = if (android.os.Build.VERSION.SDK_INT >= 31)
-                            (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
-                        else @Suppress("DEPRECATION") ctx.getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
-                        v.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 400, 200, 400), -1))
-                    }
-                    // Keep the receiver alive while the ~7 s clip plays (receivers get ~10 s in the background).
-                    val pending = goAsync()
-                    var done = false
-                    val finish = { if (!done) { done = true; runCatching { pending.finish() } } }
                     // Later repeats are louder, on the same ramp as the pill alarm.
-                    MealSound.play(ctx, Volume.rampAmp(Volume.meal(store.settings), (late.toLong().coerceAtLeast(0)) * 60_000L)) { finish() }
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finish() }, 9_000)
+                    val amp = Volume.rampAmp(Volume.meal(store.settings), (late.toLong().coerceAtLeast(0)) * 60_000L)
+                    // Hand off to a foreground service, exactly as the pill alarm does. Starting the
+                    // meal screen from here (a background context) is silently dropped on Android 10+,
+                    // which is why the reminder had degraded to a heads-up notification.
+                    val svc = Intent(ctx, MealService::class.java)
+                        .setAction(MealService.ACTION_START)
+                        .putExtra(AlarmScheduler.EXTRA_KEY, key)
+                        .putExtra(MealService.EXTRA_LABEL, d.label)
+                        .putExtra(MealService.EXTRA_TEXT, text)
+                        .putExtra(MealService.EXTRA_AMP, amp)
+                    val started = runCatching { ContextCompat.startForegroundService(ctx, svc) }.isSuccess
+                    if (!started) {
+                        // Last resort: notification plus sound from here, as before.
+                        Notifications.meal(ctx, key, d.label, text)
+                        val pending = goAsync()
+                        var done = false
+                        val finish = { if (!done) { done = true; runCatching { pending.finish() } } }
+                        MealSound.play(ctx, amp) { finish() }
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finish() }, 9_000)
+                    }
                 }
                 // Arm the next repeat (or the next meal) regardless.
                 AlarmScheduler.reschedule(ctx)

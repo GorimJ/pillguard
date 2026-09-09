@@ -106,7 +106,9 @@ object AlarmScheduler {
         // Meal reminders (bugle).
         am.cancel(mealPi(ctx, null))
         store.mealLogic().next(now)?.let { d ->
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, maxOf(d.fireAt, now + 1000), mealPi(ctx, d.key))
+            // setAlarmClock, like the dose alarms: it is the alarm-clock grade of alarm that carries
+            // the exemption letting the reminder start its foreground service and put a screen up.
+            setExact(am, ctx, maxOf(d.fireAt, now + 1000), mealPi(ctx, d.key))
         }
 
         // Eating-window reminders.

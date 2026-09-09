@@ -10,7 +10,12 @@ import androidx.core.app.NotificationCompat
 object Notifications {
     const val CH_ALARM = "alarm"
     const val CH_INFO = "info"
-    const val CH_MEAL = "meal"
+    /**
+     * Channel settings are immutable once created, so raising the meal channel to a full alarm-grade
+     * channel (bypasses Do Not Disturb, like the pill one) means a new id. The old one is deleted.
+     */
+    const val CH_MEAL = "meal2"
+    private const val CH_MEAL_OLD = "meal"
     const val ID_ALARM = 1
     const val ID_INFO = 2
     const val ID_MEAL = 3
@@ -34,10 +39,12 @@ object Notifications {
                     description = "Time to eat. The bugle is played by the app itself."
                     setSound(null, null)
                     enableVibration(true)
+                    setBypassDnd(true)
                     lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 }
             )
         }
+        runCatching { nm.deleteNotificationChannel(CH_MEAL_OLD) }
         if (nm.getNotificationChannel(CH_INFO) == null) {
             nm.createNotificationChannel(
                 NotificationChannel(CH_INFO, ctx.getString(R.string.notif_channel_info), NotificationManager.IMPORTANCE_DEFAULT).apply {
@@ -53,6 +60,13 @@ object Notifications {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
     fun meal(ctx: Context, key: String, label: String, text: String) {
+        runCatching {
+            ctx.getSystemService(NotificationManager::class.java).notify(ID_MEAL, mealNotification(ctx, key, label, text))
+        }
+    }
+
+    /** The meal reminder notification, also used as MealService's foreground notification. */
+    fun mealNotification(ctx: Context, key: String, label: String, text: String): android.app.Notification {
         ensureChannels(ctx)
         val open = PendingIntent.getActivity(
             ctx, 3, mealActivityIntent(ctx, key, label), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -65,13 +79,15 @@ object Notifications {
             ctx, 202, Intent(ctx, AlarmReceiver::class.java).setAction(AlarmScheduler.ACTION_MEAL_STOP).putExtra(AlarmScheduler.EXTRA_KEY, key),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val n = NotificationCompat.Builder(ctx, CH_MEAL)
+        return NotificationCompat.Builder(ctx, CH_MEAL)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle("$label time")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            // CATEGORY_ALARM, not REMINDER: some builds only honour a full-screen intent for
+            // alarm/call notifications, and this reminder is an alarm in everything but name.
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(open)
             .setFullScreenIntent(open, true)
@@ -81,10 +97,10 @@ object Notifications {
             .addAction(0, "Not today", stop)
             .setAutoCancel(false)
             .build()
-        runCatching { ctx.getSystemService(NotificationManager::class.java).notify(ID_MEAL, n) }
     }
 
     fun cancelMeal(ctx: Context) {
+        runCatching { ctx.stopService(Intent(ctx, MealService::class.java)) }
         runCatching { ctx.getSystemService(NotificationManager::class.java).cancel(ID_MEAL) }
     }
 

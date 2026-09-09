@@ -63,3 +63,8 @@ keys while a PillGuard alarm is actually sounding, which adjusts the alarm strea
 ## Meal reminders
 
 A bugle call (synthesised, on the alarm stream) at each meal time — defaults breakfast 07:30, lunch 11:00, dinner 19:00 — repeating every 15/15/30 minutes until "Eating now" is tapped on the notification (which also logs the meal and shifts the next pill if needed) or "Not today". A reminder only sounds while eating is actually allowed, and is abandoned once the next meal time or the next pill arrives. Sound, times and repeat intervals are in Settings.
+
+The reminder comes up as a full screen, the same way the pill alarm does: an alarm-clock alarm wakes
+a short-lived foreground service, and that service puts the screen up. It has to go through a
+service — Android silently drops an activity start made straight from a broadcast receiver, which
+left the reminder as a heads-up notification whenever the phone was unlocked.

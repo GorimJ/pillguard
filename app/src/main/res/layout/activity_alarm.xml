@@ -3,6 +3,7 @@
      buttons to someone scanning the screen quickly. The delay control sits top-right, away from
      the bottom-right corner where the system accessibility button lives. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/alarmRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/pill_alarm_bg">
@@ -44,6 +45,20 @@
                 android:textSize="30sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <!-- Shown only for the night pills, so the violet tint is not the only signal: a colour
+             difference on its own is no use to him if he cannot tell violet from blue. -->
+        <TextView
+            android:id="@+id/alarmKind"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Night pills"
+            android:textColor="@color/white"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:gravity="center"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/alarmTime"

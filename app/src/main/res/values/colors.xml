@@ -14,6 +14,9 @@
          Paired with a different glyph on each screen for red-green colour deficiency. -->
     <color name="pill_alarm_bg">#0B3A8C</color>
     <color name="meal_alarm_bg">#126B33</color>
+    <!-- Night pills: a different container, so a violet screen rather than the daytime blue.
+         White 10.6:1, amber #FFD166 7.4:1, hint #CBD5E1 7.2:1 — all above the daytime floor. -->
+    <color name="night_alarm_bg">#5B1E86</color>
     <!-- Solid widget blocks: white text sits on these (8.4:1, 8.9:1, 8.6:1). -->
     <color name="widget_green">#0F5A25</color>
     <color name="widget_red">#8F1D16</color>
@@ -28,6 +31,8 @@
     <color name="btn_alt_bg">#FFFFFF</color>
     <color name="btn_alt_text_pill">#0B3A8C</color>
     <color name="btn_alt_text_meal">#0E5A2B</color>
+    <!-- Scan button on the night screen: violet on white, 10.6:1. -->
+    <color name="btn_alt_text_night">#5B1E86</color>
     <color name="hint_on_dark">#CBD5E1</color>
     <!-- "Waiting" state for the Get pill button: reads as inactive against the blue (1.4:1) while
          its countdown stays legible (white at 7.5:1). -->

@@ -27,6 +27,18 @@
         android:textSize="14sp"
         android:fontFamily="monospace" />
 
+    <!-- Only shown once the night container has a code of its own. -->
+    <Button
+        android:id="@+id/btnWhichCode"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:minHeight="64dp"
+        android:textAllCaps="false"
+        android:visibility="gone"
+        android:text="Show the night code" />
+
     <Button
         android:id="@+id/btnPrint"
         style="@style/BigButton"

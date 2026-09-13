@@ -11,6 +11,12 @@ Rules built in (all editable in Settings, behind the carer PIN):
 - The alarm screen shows the dose time and two buttons — "Get pill" and "Scan". "Get pill" mutes the alarm for 3 minutes but leaves the screen up: a spinner and "Getting pills…" appear at the top, the button greys out and counts down, and Scan stays ready for when he comes back with the container. The sound returns if the dose is still unconfirmed. It never stops ringing on its own, and repeats every 3 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
 - A red warning triangle in the top-right puts the dose off by an hour, at most twice per dose, with a loud ntfy ping to the carer each time. It sits top-right because the system accessibility button lives bottom-right. The test alarm shows the triangle too, so the whole flow can be rehearsed — the confirm screen says it is only a test and nothing is shifted or sent. Confirming is a full screen with two large buttons; the "yes" is held for 3 seconds, and Back is inert for that same hold so a panicked jab at it cannot bounce him back to a ringing alarm.
 - Opening the scanner or the delay screen silences the alarm for 60 seconds — room to deal with it in an appointment or a cinema without the noise. If the dose is still unconfirmed when the minute is up, the alarm resumes at whatever level the ramp has reached.
+- The last dose of the day is a different set of pills, so it is treated as its own habit: a low bell
+  instead of the alarm tone, a violet screen instead of the blue one, and the words "Night pills"
+  above the time (the tint on its own is no use if violet and blue look alike). Any dose can be
+  marked this way — Settings → dose time → "Different pills". The night container can have its own
+  printed QR code, and until one is set up it accepts the daytime code; once it has one, only that
+  code clears a night dose, and scanning the wrong container says which one to fetch.
 - A manual scan from the main screen only counts as a dose if one is due or the next is within 60 minutes; otherwise it is just logged.
 - History shows a day-by-day diary and can share it as text or CSV.
 - An untaken dose is logged as missed once the following dose becomes due.
@@ -36,13 +42,17 @@ labels are sentence case; all-caps is harder to read, not easier, because the wo
 ## Telling the alarms apart
 
 Each alarm type owns a colour and a glyph, so the type is clear before any text is read: pills are a
-blue screen with a capsule, meals a green screen with a knife and fork. The glyph matters as much as
-the colour — dark blue against dark green is the pair red-green colour deficiency hits hardest. The
-heads-up notifications carry the same colours.
+blue screen with a capsule, meals a green screen with a knife and fork, night pills a violet screen
+with the words "Night pills". The glyph or word matters as much as the colour — dark blue against
+dark green is the pair red-green colour deficiency hits hardest, and violet against blue is a
+difference of tint rather than hue. The heads-up notifications carry the same colours. Each also
+sounds different: the phone's alarm tone for daytime pills, a low bell for night pills, a bugle for
+meals.
 
 ## Contrast
 
-Every text/background pair on the alarm, meal, main and widget surfaces is contrast-checked; the
+Every text/background pair on the alarm, night, meal, main and widget surfaces is contrast-checked;
+on the violet night screen white is 10.6:1, the amber time 7.4:1 and the override hint 7.2:1, and the
 lowest ratio anywhere is 5.45:1, against a WCAG AA minimum of 4.5:1 for body text and 3:1 for large
 text. Alarm button colours are set in explicit styles using `backgroundTint` (the app-namespace
 attribute MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme

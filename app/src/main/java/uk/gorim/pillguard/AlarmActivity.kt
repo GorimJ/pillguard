@@ -28,15 +28,35 @@ class AlarmActivity : AppCompatActivity() {
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         val store = Store.get(this)
         val k = key ?: return@registerForActivityResult
+        val test = k == AlarmScheduler.TEST_KEY
         when {
             result.contents == null -> Unit // cancelled; keep ringing
-            store.matchesQr(result.contents) -> confirm(k, "scan")
+            // A night dose wants the night container's code, if a separate one has been set up.
+            if (test) store.matchesAnyQr(result.contents) else store.matchesQrFor(k, result.contents) ->
+                confirm(k, "scan")
+            store.matchesAnyQr(result.contents) -> {
+                store.log("${store.labelFor(k)} dose: wrong container scanned")
+                Ui.toast(
+                    this,
+                    if (store.isNightKey(k)) "That's the daytime pills. Scan the night container."
+                    else "That's the night pills. Scan the daytime container."
+                )
+            }
             else -> Ui.toast(this, "That's not the medication QR code. Try again.")
         }
     }
 
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) Ui.launchScan(scanLauncher) else Ui.toast(this, "Camera permission is needed to scan the QR code.")
+        if (granted) scanLauncher.launch(Ui.scanOptions(scanPrompt()))
+        else Ui.toast(this, "Camera permission is needed to scan the QR code.")
+    }
+
+    /** Names the container when the night pills carry a code of their own. */
+    private fun scanPrompt(): String {
+        val store = Store.get(this)
+        if (!store.hasSeparateNightQr) return "Point the camera at the QR code on the pill container"
+        return if (store.isNightKey(key)) "Point the camera at the code on the NIGHT container"
+        else "Point the camera at the code on the DAYTIME container"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +73,7 @@ class AlarmActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnTaking).setOnClickListener {
             reprieve()
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
-                Ui.launchScan(scanLauncher)
+                scanLauncher.launch(Ui.scanOptions(scanPrompt()))
             else cameraPermission.launch(android.Manifest.permission.CAMERA)
         }
         findViewById<Button>(R.id.btnGoing).setOnClickListener {
@@ -90,6 +110,7 @@ class AlarmActivity : AppCompatActivity() {
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
         findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
+        applyNightTint(inst.night)
         if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown(store.snoozeUntil)
         else if (quietTick == null) endQuietCountdown()
         // Fade the triangle once both delays are used, rather than hiding it — a control that
@@ -149,6 +170,24 @@ class AlarmActivity : AppCompatActivity() {
             android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, R.color.btn_primary_bg))
         going.setTextColor(ContextCompat.getColor(this, R.color.btn_primary_text))
         going.text = "Get pill"
+    }
+
+    /**
+     * Same screen, different tint: violet for the night pills. The word "Night pills" appears with
+     * it — the tint alone would be no help if violet and blue look alike to him.
+     */
+    private fun applyNightTint(night: Boolean) {
+        val bg = ContextCompat.getColor(this, if (night) R.color.night_alarm_bg else R.color.pill_alarm_bg)
+        findViewById<android.view.View>(R.id.alarmRoot).setBackgroundColor(bg)
+        findViewById<android.widget.LinearLayout>(R.id.delayConfirm).setBackgroundColor(bg)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        findViewById<TextView>(R.id.alarmKind).visibility =
+            if (night) android.view.View.VISIBLE else android.view.View.GONE
+        // The Scan button is white; its text picks up the screen's colour so the pair stays legible.
+        val alt = ContextCompat.getColor(this, if (night) R.color.btn_alt_text_night else R.color.btn_alt_text_pill)
+        findViewById<Button>(R.id.btnTaking).setTextColor(alt)
+        findViewById<Button>(R.id.btnDelayNo).setTextColor(alt)
     }
 
     /** Silences the alarm for a minute so he can act without the noise (appointment, cinema). */

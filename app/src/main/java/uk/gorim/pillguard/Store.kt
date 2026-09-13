@@ -56,10 +56,51 @@ class Store private constructor(ctx: Context) {
             if (s.reRingMin == 2) settings = s.copy(reRingMin = 3)
             prefs.edit().putBoolean("mig_rering3", true).apply()
         }
+        // The last dose of the day is a different set of pills. Existing installs have no night
+        // flag, so mark the one called "Night" — or, failing that, anything from 21:00 onwards.
+        if (!prefs.getBoolean("mig_nightdose", false)) {
+            val s = settings
+            if (s.doseTimes.none { it.night }) {
+                val byLabel = s.doseTimes.any { it.label.trim().equals("Night", ignoreCase = true) }
+                val marked = s.doseTimes.map {
+                    val isNight = if (byLabel) it.label.trim().equals("Night", ignoreCase = true)
+                    else it.minuteOfDay >= 21 * 60
+                    if (isNight) it.copy(night = true) else it
+                }
+                if (marked.any { it.night }) {
+                    settings = s.copy(doseTimes = marked)
+                    log("Night pills split out: ${marked.filter { it.night }.joinToString { it.label }}")
+                }
+            }
+            prefs.edit().putBoolean("mig_nightdose", true).apply()
+        }
     }
 
     val qrPayload: String get() = QR_PREFIX + settings.qrSecret
+
+    /** The night code, which is the daytime one until a separate one is set up. */
+    val nightQrPayload: String
+        get() = QR_PREFIX + settings.nightQrSecret.ifEmpty { settings.qrSecret }
+
+    val hasSeparateNightQr: Boolean get() = settings.nightQrSecret.isNotEmpty()
+
     fun matchesQr(text: String?): Boolean = text != null && text.trim() == qrPayload
+
+    fun matchesNightQr(text: String?): Boolean = text != null && text.trim() == nightQrPayload
+
+    /** True if [key] is a night dose — a different container, possibly with its own code. */
+    fun isNightKey(key: String?): Boolean {
+        val idx = key?.substringAfter('#')?.toIntOrNull() ?: return false
+        return settings.doseTimes.getOrNull(idx)?.night == true
+    }
+
+    /** The code this particular dose expects: the night one for night doses, otherwise the daytime one. */
+    fun payloadFor(key: String?): String = if (isNightKey(key)) nightQrPayload else qrPayload
+
+    fun matchesQrFor(key: String?, text: String?): Boolean = text != null && text.trim() == payloadFor(key)
+
+    /** Any PillGuard code the app currently knows, whichever container it came from. */
+    fun matchesAnyQr(text: String?): Boolean = matchesQr(text) || matchesNightQr(text)
 
     var setupDone: Boolean
         get() = prefs.getBoolean(K_SETUP_DONE, false)

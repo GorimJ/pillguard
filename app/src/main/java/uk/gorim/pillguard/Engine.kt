@@ -42,6 +42,7 @@ class Engine(
                         takenAt = r?.takenAt ?: 0, method = r?.method ?: "",
                         status = status, snoozes = r?.snoozes ?: 0,
                         shiftReason = r?.shiftReason ?: "", delays = r?.delays ?: 0,
+                        night = dt.night,
                     )
                 )
             }

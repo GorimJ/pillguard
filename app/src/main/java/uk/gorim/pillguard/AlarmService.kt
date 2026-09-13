@@ -42,6 +42,8 @@ class AlarmService : Service() {
     private var resumeRunnable: Runnable? = null
     private var pauseUntilElapsed = 0L
     private var rampAnchor = 0L
+    /** Night pills are a different container, so they get their own sound. */
+    private var isNight = false
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -66,6 +68,7 @@ class AlarmService : Service() {
         val inst = if (isTest) null else store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == key }
         val label = if (isTest) "TEST" else inst?.label ?: store.labelFor(key)
         val time = inst?.let { TimeFmt.hm(it.effectiveMillis) } ?: TimeFmt.hm(System.currentTimeMillis())
+        isNight = !isTest && (inst?.night ?: store.isNightKey(key))
 
         if (!startForegroundWithNotification(key, label, time)) return START_NOT_STICKY
         if (ringingKey != key) {
@@ -106,7 +109,11 @@ class AlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setColor(androidx.core.content.ContextCompat.getColor(this, R.color.pill_alarm_bg))
+            .setColor(
+                androidx.core.content.ContextCompat.getColor(
+                    this, if (isNight) R.color.night_alarm_bg else R.color.pill_alarm_bg
+                )
+            )
             .setColorized(true)
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
@@ -136,7 +143,12 @@ class AlarmService : Service() {
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire() }
         }
 
-        val candidates = listOfNotNull(
+        val candidates = if (isNight) listOfNotNull(
+            // The night pills sound nothing like the daytime ones: a low bell figure by default.
+            NightSound.uri(this),
+            NightSound.bundledUri(this),
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+        ) else listOfNotNull(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
             android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,

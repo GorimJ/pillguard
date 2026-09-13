@@ -19,21 +19,21 @@ import java.io.File
 
 class QrActivity : AppCompatActivity() {
     private lateinit var sheet: Bitmap
+    /** Which container's code is on screen. Only relevant once the night pills have their own. */
+    private var showingNight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_qr)
         title = getString(R.string.print_qr)
         val store = Store.get(this)
-        val payload = store.qrPayload
 
-        val qr = BarcodeEncoder().encodeBitmap(
-            payload, BarcodeFormat.QR_CODE, 800, 800,
-            mapOf(EncodeHintType.MARGIN to 1, EncodeHintType.ERROR_CORRECTION to com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H)
-        )
-        findViewById<ImageView>(R.id.qrImage).setImageBitmap(qr)
-        findViewById<TextView>(R.id.qrText).text = payload
-        sheet = makeSheet(qr)
+        val toggle = findViewById<Button>(R.id.btnWhichCode)
+        if (store.hasSeparateNightQr) {
+            toggle.visibility = android.view.View.VISIBLE
+            toggle.setOnClickListener { showingNight = !showingNight; render() }
+        }
+        render()
 
         findViewById<Button>(R.id.btnPrint).setOnClickListener {
             PrintHelper(this).apply {
@@ -44,8 +44,25 @@ class QrActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnShare).setOnClickListener { share() }
     }
 
+    private fun render() {
+        val store = Store.get(this)
+        val payload = if (showingNight) store.nightQrPayload else store.qrPayload
+        val caption = if (showingNight) "PillGuard night pills" else "PillGuard medication code"
+
+        val qr = BarcodeEncoder().encodeBitmap(
+            payload, BarcodeFormat.QR_CODE, 800, 800,
+            mapOf(EncodeHintType.MARGIN to 1, EncodeHintType.ERROR_CORRECTION to com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H)
+        )
+        findViewById<ImageView>(R.id.qrImage).setImageBitmap(qr)
+        findViewById<TextView>(R.id.qrText).text =
+            (if (store.hasSeparateNightQr) (if (showingNight) "NIGHT container\n" else "DAYTIME containers\n") else "") + payload
+        findViewById<Button>(R.id.btnWhichCode).text =
+            if (showingNight) "Show the daytime code" else "Show the night code"
+        sheet = makeSheet(qr, caption)
+    }
+
     /** A4-ish sheet with a 3x3 grid of codes so several containers / spares can be labelled from one print. */
-    private fun makeSheet(qr: Bitmap): Bitmap {
+    private fun makeSheet(qr: Bitmap, caption: String): Bitmap {
         val w = 2480; val h = 3508 // A4 @ 300dpi
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565)
         val c = Canvas(bmp)
@@ -54,20 +71,23 @@ class QrActivity : AppCompatActivity() {
         val cell = 700; val gap = 90
         val startX = (w - (3 * cell + 2 * gap)) / 2
         val startY = 250
-        c.drawText("PillGuard — stick one code on the bottom of each medication container", w / 2f, 150f, paint.apply { textSize = 56f })
+        val header = if (showingNight)
+            "PillGuard — stick one code on the NIGHT medication container"
+        else "PillGuard — stick one code on the bottom of each medication container"
+        c.drawText(header, w / 2f, 150f, paint.apply { textSize = 56f })
         paint.textSize = 40f
         val scaled = Bitmap.createScaledBitmap(qr, cell, cell, true)
         for (r in 0 until 3) for (col in 0 until 3) {
             val x = startX + col * (cell + gap); val y = startY + r * (cell + gap + 80)
             c.drawBitmap(scaled, x.toFloat(), y.toFloat(), null)
-            c.drawText("PillGuard medication code", x + cell / 2f, y + cell + 55f, paint)
+            c.drawText(caption, x + cell / 2f, y + cell + 55f, paint)
         }
         return bmp
     }
 
     private fun share() {
         val dir = File(cacheDir, "share").apply { mkdirs() }
-        val f = File(dir, "pillguard-qr.png")
+        val f = File(dir, if (showingNight) "pillguard-qr-night.png" else "pillguard-qr.png")
         f.outputStream().use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
         val uri = FileProvider.getUriForFile(this, "$packageName.files", f)
         startActivity(

@@ -8,12 +8,17 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** A dose slot in the daily routine, e.g. 07:00 "Morning". */
-data class DoseTime(val minuteOfDay: Int, val label: String) {
-    fun toJson(): JSONObject = JSONObject().put("m", minuteOfDay).put("l", label)
+/**
+ * A dose slot in the daily routine, e.g. 07:00 "Morning".
+ *
+ * [night] marks a slot that is a different set of pills from a different container: its own sound,
+ * its own screen colour, and optionally its own QR code.
+ */
+data class DoseTime(val minuteOfDay: Int, val label: String, val night: Boolean = false) {
+    fun toJson(): JSONObject = JSONObject().put("m", minuteOfDay).put("l", label).put("n", night)
 
     companion object {
-        fun fromJson(o: JSONObject) = DoseTime(o.getInt("m"), o.getString("l"))
+        fun fromJson(o: JSONObject) = DoseTime(o.getInt("m"), o.getString("l"), o.optBoolean("n", false))
     }
 }
 
@@ -40,6 +45,10 @@ data class Settings(
     val ringTimeoutMin: Int,
     val pin: String,
     val qrSecret: String,
+    /** Empty = night doses accept the same code as the daytime ones. */
+    val nightQrSecret: String,
+    /** Empty = the generated night bell; otherwise a ringtone URI chosen by the user. */
+    val nightSoundUri: String,
     /** Push alerts to the carer via ntfy.sh when a dose goes unconfirmed. */
     val alertsEnabled: Boolean,
     val alertTopic: String,
@@ -81,6 +90,8 @@ data class Settings(
         .put("ringTimeoutMin", ringTimeoutMin)
         .put("pin", pin)
         .put("qrSecret", qrSecret)
+        .put("nightQrSecret", nightQrSecret)
+        .put("nightSoundUri", nightSoundUri)
 
     companion object {
         val DEFAULT_DOSES = listOf(
@@ -88,7 +99,7 @@ data class Settings(
             DoseTime(10 * 60 + 30, "Mid-morning"),
             DoseTime(14 * 60 + 30, "Afternoon"),
             DoseTime(18 * 60 + 30, "Evening"),
-            DoseTime(22 * 60 + 30, "Night"),
+            DoseTime(22 * 60 + 30, "Night", night = true),
         )
 
         val DEFAULT_MEALS = listOf(
@@ -106,6 +117,8 @@ data class Settings(
             ringTimeoutMin = 2,
             pin = "",
             qrSecret = secret,
+            nightQrSecret = "",
+            nightSoundUri = "",
             alertsEnabled = false,
             alertTopic = "",
             alertAfterMin = 15,
@@ -134,6 +147,8 @@ data class Settings(
                 ringTimeoutMin = o.optInt("ringTimeoutMin", d.ringTimeoutMin),
                 pin = o.optString("pin", ""),
                 qrSecret = o.optString("qrSecret", secretIfMissing).ifEmpty { secretIfMissing },
+                nightQrSecret = o.optString("nightQrSecret", ""),
+                nightSoundUri = o.optString("nightSoundUri", ""),
                 alertsEnabled = o.optBoolean("alertsEnabled", false),
                 alertTopic = o.optString("alertTopic", ""),
                 alertAfterMin = o.optInt("alertAfterMin", 15),
@@ -207,6 +222,8 @@ data class DoseInstance(
     val snoozes: Int,
     val shiftReason: String,
     val delays: Int = 0,
+    /** A different set of pills: own sound, own screen colour, possibly its own code. */
+    val night: Boolean = false,
 ) {
     val canDelay get() = delays < DoseRecord.MAX_DELAYS
     val isShifted get() = effectiveMillis != scheduledMillis

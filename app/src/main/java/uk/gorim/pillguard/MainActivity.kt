@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents == null) return@registerForActivityResult
         val store = Store.get(this)
-        if (!store.matchesQr(result.contents)) { Ui.toast(this, "That's not the medication QR code."); return@registerForActivityResult }
+        if (!store.matchesAnyQr(result.contents)) { Ui.toast(this, "That's not the medication QR code."); return@registerForActivityResult }
         if (AlarmService.ringingKey == AlarmScheduler.TEST_KEY) {
             AlarmScheduler.cancelTest(this)
             Ui.toast(this, "Test alarm cleared."); return@registerForActivityResult
@@ -50,6 +50,16 @@ class MainActivity : AppCompatActivity() {
         if (target == null) {
             store.log("QR scanned — no dose due (next ${next?.let { "${it.label.lowercase()} at ${TimeFmt.hm(it.effectiveMillis)}" } ?: "none"}); logged only")
             Ui.toast(this, "Scan logged. No pill is due yet" + (next?.let { " — next is ${it.label.lowercase()} at ${TimeFmt.hm(it.effectiveMillis)}." } ?: "."))
+            render(); return@registerForActivityResult
+        }
+        // Night doses are a different container: the code has to match the dose being cleared.
+        if (!store.matchesQrFor(target.key, result.contents)) {
+            store.log("${target.label} dose: wrong container scanned; logged only")
+            Ui.toast(
+                this,
+                if (store.isNightKey(target.key)) "That's the daytime code. The ${target.label.lowercase()} dose needs the night container."
+                else "That's the night code. The ${target.label.lowercase()} dose needs the daytime container."
+            )
             render(); return@registerForActivityResult
         }
         store.markTaken(target.key, "scan", now)
@@ -142,7 +152,9 @@ class MainActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 12, 0, 12); gravity = Gravity.CENTER_VERTICAL }
             val left = TextView(this).apply {
                 textSize = 19f
-                text = "${TimeFmt.hm(d.effectiveMillis)}  ${d.label}" + if (d.isShifted) "  (was ${TimeFmt.hm(d.scheduledMillis)})" else ""
+                text = "${TimeFmt.hm(d.effectiveMillis)}  ${d.label}" +
+                    (if (d.night) "  · night pills" else "") +
+                    (if (d.isShifted) "  (was ${TimeFmt.hm(d.scheduledMillis)})" else "")
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
             val right = TextView(this).apply {

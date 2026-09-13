@@ -238,6 +238,61 @@
             android:textAllCaps="false"
             android:text="Use a code I already printed (scan it)" />
 
+        <TextView style="@style/SettingsHeader" android:text="Night pills" />
+        <TextView
+            android:id="@+id/nightInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnNightSound"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Choose a different sound" />
+            <Button
+                android:id="@+id/btnNightChime"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Back to the bell" />
+            <Button
+                android:id="@+id/btnTestNight"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:text="Play" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btnNightQr"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Give the night container its own code" />
+        <Button
+            android:id="@+id/btnAdoptNightQr"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Use a night code I already printed (scan it)" />
+        <Button
+            android:id="@+id/btnSameNightQr"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:text="Use the same code as the daytime pills" />
+
         <TextView style="@style/SettingsHeader" android:text="Carer alerts" />
         <TextView
             android:layout_width="match_parent"

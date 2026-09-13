@@ -24,14 +24,22 @@ class SettingsActivity : AppCompatActivity() {
     private val mealList = ArrayList<MealTime>()
     private lateinit var store: Store
     private var mealSoundUri: String = ""
+    private var nightSoundUri: String = ""
+    /** Which sound the ringtone picker was opened for. */
+    private var pickingNight = false
     private var previewPlayer: android.media.MediaPlayer? = null
 
     private val soundPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         if (res.resultCode != RESULT_OK) return@registerForActivityResult
         @Suppress("DEPRECATION")
         val uri = res.data?.getParcelableExtra<android.net.Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-        mealSoundUri = uri?.toString() ?: ""
-        renderMealSound()
+        if (pickingNight) {
+            nightSoundUri = uri?.toString() ?: ""
+            renderNight()
+        } else {
+            mealSoundUri = uri?.toString() ?: ""
+            renderMealSound()
+        }
     }
 
     /** Adopt an already-printed code so a reinstall or new phone doesn't need new labels. */
@@ -46,9 +54,29 @@ class SettingsActivity : AppCompatActivity() {
         Ui.toast(this, "Printed code adopted — the alarm will accept it.")
     }
 
+    /** Same, for the night container when it carries its own printed code. */
+    private val adoptNightLauncher = registerForActivityResult(ScanContract()) { result ->
+        val text = result.contents?.trim() ?: return@registerForActivityResult
+        if (!text.startsWith(Store.QR_PREFIX) || text.length <= Store.QR_PREFIX.length) {
+            Ui.toast(this, "That isn't a PillGuard code."); return@registerForActivityResult
+        }
+        val secret = text.removePrefix(Store.QR_PREFIX)
+        if (secret == store.settings.qrSecret) {
+            Ui.toast(this, "That is the daytime code — the night pills already accept it.")
+            return@registerForActivityResult
+        }
+        store.settings = store.settings.copy(nightQrSecret = secret)
+        store.log("Adopted printed night QR code")
+        renderNight()
+        Ui.toast(this, "Night code adopted — only it will clear the night dose.")
+    }
+
+    private var cameraForNight = false
+
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) adoptLauncher.launch(Ui.scanOptions("Scan the printed PillGuard code to keep using it"))
-        else Ui.toast(this, "Camera permission is needed to scan.")
+        if (!granted) { Ui.toast(this, "Camera permission is needed to scan."); return@registerForActivityResult }
+        if (cameraForNight) adoptNightLauncher.launch(Ui.scanOptions("Scan the printed code on the night container"))
+        else adoptLauncher.launch(Ui.scanOptions("Scan the printed PillGuard code to keep using it"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,10 +128,51 @@ class SettingsActivity : AppCompatActivity() {
                 .setNegativeButton("Cancel", null).show()
         }
         findViewById<Button>(R.id.btnAdoptQr).setOnClickListener {
+            cameraForNight = false
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                 adoptLauncher.launch(Ui.scanOptions("Scan the printed PillGuard code to keep using it"))
             else cameraPermission.launch(Manifest.permission.CAMERA)
         }
+
+        // Night pills: their own sound, and optionally their own code.
+        nightSoundUri = s.nightSoundUri
+        findViewById<Button>(R.id.btnNightSound).setOnClickListener {
+            pickingNight = true
+            val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Night pill sound")
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+            if (nightSoundUri.isNotEmpty())
+                i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(nightSoundUri))
+            soundPicker.launch(i)
+        }
+        findViewById<Button>(R.id.btnNightChime).setOnClickListener { nightSoundUri = ""; renderNight() }
+        findViewById<Button>(R.id.btnTestNight).setOnClickListener { previewNight() }
+        findViewById<Button>(R.id.btnNightQr).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Separate code for the night pills?")
+                .setMessage("The night dose will then only be cleared by the new code — print it and stick it on the night container before the next night dose.")
+                .setPositiveButton("Generate") { _, _ ->
+                    store.settings = store.settings.copy(nightQrSecret = Store.newSecret())
+                    store.log("Separate night QR code generated")
+                    renderNight()
+                }
+                .setNegativeButton("Cancel", null).show()
+        }
+        findViewById<Button>(R.id.btnAdoptNightQr).setOnClickListener {
+            cameraForNight = true
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+                adoptNightLauncher.launch(Ui.scanOptions("Scan the printed code on the night container"))
+            else cameraPermission.launch(Manifest.permission.CAMERA)
+        }
+        findViewById<Button>(R.id.btnSameNightQr).setOnClickListener {
+            if (!store.hasSeparateNightQr) { Ui.toast(this, "It already uses the daytime code."); return@setOnClickListener }
+            store.settings = store.settings.copy(nightQrSecret = "")
+            store.log("Night pills back to the daytime QR code")
+            renderNight()
+        }
+        renderNight()
         findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
 
         // Meal reminders
@@ -255,6 +324,29 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun renderNight() {
+        val names = store.settings.doseTimes.filter { it.night }
+            .joinToString { "${TimeFmt.minuteOfDay(it.minuteOfDay)} ${it.label}" }
+        val sound = if (nightSoundUri.isEmpty()) "low bell (built in)"
+        else runCatching { RingtoneManager.getRingtone(this, android.net.Uri.parse(nightSoundUri))?.getTitle(this) }
+            .getOrNull() ?: "custom"
+        val code = if (store.hasSeparateNightQr) "Night code: ${store.nightQrPayload}\nPrint it from the QR code screen."
+        else "Code: the same one as the daytime pills."
+        findViewById<TextView>(R.id.nightInfo).text =
+            (if (names.isEmpty()) "No dose is marked as night pills — tick \"different pills\" when editing a dose time.\n"
+            else "Night doses: $names\n") + "Sound: $sound\n" + code
+    }
+
+    /** Plays the night sound at the pill alarm's starting volume. */
+    private fun previewNight() {
+        stopPreview()
+        val saved = store.settings
+        store.settings = saved.copy(nightSoundUri = nightSoundUri)
+        previewPlayer = NightSound.play(this, Volume.startAmp(Volume.pill(saved))) { previewPlayer = null }
+        store.settings = saved
+        Ui.toast(this, "Playing at the starting volume")
+    }
+
     private fun renderMealSound() {
         val name = if (mealSoundUri.isEmpty()) "bugle call (built in)"
         else runCatching { RingtoneManager.getRingtone(this, android.net.Uri.parse(mealSoundUri))?.getTitle(this) }.getOrNull() ?: "custom"
@@ -328,7 +420,7 @@ class SettingsActivity : AppCompatActivity() {
         doses.forEachIndexed { i, d ->
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             val t = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-                text = "${TimeFmt.minuteOfDay(d.minuteOfDay)}   ${d.label}"
+                text = "${TimeFmt.minuteOfDay(d.minuteOfDay)}   ${d.label}" + if (d.night) "   · night pills" else ""
                 isAllCaps = false; textSize = 18f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setOnClickListener { editDose(i) }
@@ -345,16 +437,25 @@ class SettingsActivity : AppCompatActivity() {
     private fun editDose(index: Int?) {
         val existing = index?.let { doses[it] }
         val nameBox = EditText(this).apply { hint = "Label, e.g. Morning"; setText(existing?.label ?: ""); textSize = 18f }
+        val nightBox = android.widget.CheckBox(this).apply {
+            text = "Different pills (night container): own sound and colour"
+            textSize = 17f
+            isChecked = existing?.night == true
+        }
         val pad = (24 * resources.displayMetrics.density).toInt()
-        val wrap = LinearLayout(this).apply { setPadding(pad, pad / 2, pad, 0); addView(nameBox) }
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0); addView(nameBox); addView(nightBox)
+        }
         AlertDialog.Builder(this)
             .setTitle(if (existing == null) "New dose" else "Edit dose")
             .setView(wrap)
             .setPositiveButton("Pick time") { _, _ ->
                 val label = nameBox.text.toString().ifBlank { "Dose" }
+                val night = nightBox.isChecked
                 val init = existing?.minuteOfDay ?: (12 * 60)
                 TimePickerDialog(this, { _, h, m ->
-                    val dt = DoseTime(h * 60 + m, label)
+                    val dt = DoseTime(h * 60 + m, label, night)
                     if (index == null) doses.add(dt) else doses[index] = dt
                     renderDoses()
                 }, init / 60, init % 60, true).show()
@@ -383,6 +484,7 @@ class SettingsActivity : AppCompatActivity() {
             mealsEnabled = findViewById<MaterialSwitch>(R.id.mealsEnabled).isChecked,
             meals = mealList.sortedBy { it.minuteOfDay },
             mealSoundUri = mealSoundUri,
+            nightSoundUri = nightSoundUri,
             alertsEnabled = findViewById<MaterialSwitch>(R.id.alertsEnabled).isChecked,
             alertAfterMin = num(R.id.alertAfter).text.toString().toIntOrNull()?.coerceIn(1, 240) ?: s.alertAfterMin,
         )

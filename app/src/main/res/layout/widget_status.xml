@@ -52,4 +52,20 @@
             android:textStyle="bold"
             android:fontFamily="monospace" />
     </LinearLayout>
+
+    <!-- Its own tap target, separate from the rest of the widget: everything goes quiet from here
+         without opening the app and finding a button. -->
+    <TextView
+        android:id="@+id/wGoingOut"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/widget_btn"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="I'm going out" />
 </LinearLayout>

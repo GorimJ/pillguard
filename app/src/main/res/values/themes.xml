@@ -28,6 +28,13 @@
         <item name="android:navigationBarColor">@color/meal_alarm_bg</item>
     </style>
 
+    <style name="Theme.PillGuard.Out" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="android:windowBackground">@color/out_bg</item>
+        <item name="android:statusBarColor">@color/out_bg</item>
+        <item name="android:navigationBarColor">@color/out_bg</item>
+    </style>
+
     <style name="AlarmButtonPrimary" parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/btn_primary_bg</item>
         <item name="android:textColor">@color/btn_primary_text</item>

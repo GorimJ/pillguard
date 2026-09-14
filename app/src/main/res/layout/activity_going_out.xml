@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same language as the alarm screens: little text, large type, two big targets. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/outRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/out_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/outTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Going out?"
+            android:textColor="@color/white"
+            android:textSize="46sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/outUntil"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Quiet until 16:05"
+            android:textColor="#FFD166"
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/outDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text=""
+            android:textColor="@color/white"
+            android:textSize="26sp"
+            android:lineSpacingMultiplier="1.15"
+            android:gravity="center" />
+
+        <Button
+            android:id="@+id/btnOutYes"
+            style="@style/AlarmButtonPrimary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:minHeight="140dp"
+            android:textSize="38sp"
+            android:text="Yes, I'm going out" />
+
+        <Button
+            android:id="@+id/btnOutNo"
+            style="@style/AlarmButtonAlt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="90dp"
+            android:textSize="30sp"
+            android:text="No, stay as it is" />
+    </LinearLayout>
+</ScrollView>

@@ -17,6 +17,10 @@
     <!-- Night pills: a different container, so a violet screen rather than the daytime blue.
          White 10.6:1, amber #FFD166 7.4:1, hint #CBD5E1 7.2:1 — all above the daytime floor. -->
     <color name="night_alarm_bg">#5B1E86</color>
+    <!-- "Going out": slate, distinct from all three alarm screens.
+         White 11.5:1, amber #FFD166 8.0:1, and slate-on-white for the second button 11.5:1. -->
+    <color name="out_bg">#1F3A5F</color>
+    <color name="out_text">#1F3A5F</color>
     <!-- Solid widget blocks: white text sits on these (8.4:1, 8.9:1, 8.6:1). -->
     <color name="widget_green">#0F5A25</color>
     <color name="widget_red">#8F1D16</color>

@@ -88,6 +88,17 @@
             android:textAllCaps="false"
             android:text="Scan QR — taking a dose now" />
 
+        <Button
+            android:id="@+id/btnGoingOut"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="64dp"
+            android:textSize="20sp"
+            android:textAllCaps="false"
+            android:text="I'm going out — no alarms for a while" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

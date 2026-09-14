@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Same language as the alarm screens: little text, large type, two big targets. -->
+<!-- Same language as the alarm screens: little text, large type, big targets. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/outRoot"
     android:layout_width="match_parent"
@@ -55,6 +55,16 @@
             android:minHeight="140dp"
             android:textSize="38sp"
             android:text="Yes, I'm going out" />
+
+        <!-- Two hours is not always enough, and guessing wrong is the thing that makes him anxious. -->
+        <Button
+            android:id="@+id/btnOutLonger"
+            style="@style/AlarmButtonAlt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:textSize="32sp"
+            android:text="Longer" />
 
         <Button
             android:id="@+id/btnOutNo"

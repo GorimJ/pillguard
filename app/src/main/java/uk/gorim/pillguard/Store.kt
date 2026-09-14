@@ -173,6 +173,32 @@ class Store private constructor(ctx: Context) {
         return plan
     }
 
+    /**
+     * "Longer" while already out: pushes the end of the window back and takes the doses with it —
+     * both the ones it has already deferred and any that the extra time now covers.
+     */
+    fun extendGoingOut(extraHours: Int = 1): GoingOut {
+        val now = System.currentTimeMillis()
+        val until = maxOf(quietUntil, now) + extraHours * 3_600_000L
+        quietUntil = until
+        val window = engine().window(now)
+        val deferredKeys = records.values
+            .filter { it.shiftReason == goingOutReason && it.takenAt == 0L }
+            .map { it.key }.toSet()
+        // Already deferred doses ride along; anything the extra hour now covers joins them.
+        val riding = window.filter { it.key in deferredKeys && it.status == DoseStatus.PENDING }
+        val fresh = window.filter {
+            it.status == DoseStatus.PENDING && it.key !in deferredKeys && it.effectiveMillis in now until until
+        }
+        val moved = (riding + fresh).sortedBy { it.scheduledMillis }
+            .mapIndexed { i, d -> d to until + i * 60 * 60_000L }
+        moved.forEach { (d, t) ->
+            updateRecord(d.key) { it.copy(shiftedTo = t, shiftReason = goingOutReason) }
+        }
+        log("Going out extended — quiet until ${TimeFmt.hm(until)}")
+        return GoingOut(until, moved, emptyList(), emptyList())
+    }
+
     /** Back early: the quiet ends now and any dose it moved goes back to its own time. */
     fun endGoingOut() {
         quietUntil = 0

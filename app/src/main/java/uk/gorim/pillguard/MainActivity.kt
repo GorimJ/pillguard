@@ -93,6 +93,9 @@ class MainActivity : AppCompatActivity() {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                 Ui.launchScan(scanLauncher) else cameraPermission.launch(Manifest.permission.CAMERA)
         }
+        findViewById<Button>(R.id.btnGoingOut).setOnClickListener {
+            startActivity(Intent(this, GoingOutActivity::class.java))
+        }
         findViewById<Button>(R.id.btnHistory).setOnClickListener { startActivity(Intent(this, LogActivity::class.java)) }
         findViewById<Button>(R.id.btnQr).setOnClickListener { startActivity(Intent(this, QrActivity::class.java)) }
         findViewById<Button>(R.id.btnSettings).setOnClickListener {
@@ -137,6 +140,10 @@ class MainActivity : AppCompatActivity() {
         head.setTextColor(ContextCompat.getColor(this, fg))
         head.text = st.headline
         detail.text = st.detail
+
+        findViewById<Button>(R.id.btnGoingOut).text =
+            if (store.isQuiet) "Out until ${TimeFmt.hm(store.quietUntil)} — tap when you're home"
+            else "I'm going out — no alarms for a while"
 
         val due = e.dueDose(now)
         val next = e.nextUpcoming(now)

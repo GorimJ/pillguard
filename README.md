@@ -17,6 +17,13 @@ Rules built in (all editable in Settings, behind the carer PIN):
   marked this way — Settings → dose time → "Different pills". The night container can have its own
   printed QR code, and until one is set up it accepts the daytime code; once it has one, only that
   code clears a night dose, and scanning the wrong container says which one to fetch.
+- "I'm going out" — a button on the widget and on the main screen — silences everything for a couple
+  of hours (Settings sets how long). It first shows exactly what it is about to silence: which pills
+  move and to when, which meal reminders are dropped, and anything already overdue. Doses inside the
+  window are moved to the end of it rather than skipped, spaced an hour apart if two fall together;
+  a dose that was already overdue is left where it is, because it is still owed. The widget says
+  "Out — alarms off" for the duration, and one tap on it (or on the notification) ends the outing
+  early and puts any moved dose back at its own time. The carer gets a note at both ends.
 - A manual scan from the main screen only counts as a dose if one is due or the next is within 60 minutes; otherwise it is just logged.
 - History shows a day-by-day diary and can share it as text or CSV.
 - An untaken dose is logged as missed once the following dose becomes due.
@@ -47,16 +54,17 @@ with the words "Night pills". The glyph or word matters as much as the colour �
 dark green is the pair red-green colour deficiency hits hardest, and violet against blue is a
 difference of tint rather than hue. The heads-up notifications carry the same colours. Each also
 sounds different: the phone's alarm tone for daytime pills, a low bell for night pills, a bugle for
-meals.
+meals. "Going out" gets its own slate screen, so it can never be mistaken for an alarm.
 
 ## Contrast
 
-Every text/background pair on the alarm, night, meal, main and widget surfaces is contrast-checked;
-on the violet night screen white is 10.6:1, the amber time 7.4:1 and the override hint 7.2:1, and the
-lowest ratio anywhere is 5.45:1, against a WCAG AA minimum of 4.5:1 for body text and 3:1 for large
-text. Alarm button colours are set in explicit styles using `backgroundTint` (the app-namespace
-attribute MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme
-cannot substitute its own colours for them.
+Every text/background pair on the alarm, night, meal, going-out, main and widget surfaces is
+contrast-checked; on the violet night screen white is 10.6:1, the amber time 7.4:1 and the override
+hint 7.2:1, on the slate going-out screen white is 11.5:1 and the amber 8.0:1, and the lowest ratio
+anywhere is 5.45:1, against a WCAG AA minimum of 4.5:1 for body text and 3:1 for large text. Alarm
+button colours are set in explicit styles using `backgroundTint` (the app-namespace attribute
+MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme cannot
+substitute its own colours for them.
 
 ## Battery
 

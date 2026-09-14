@@ -49,6 +49,8 @@ data class Settings(
     val nightQrSecret: String,
     /** Empty = the generated night bell; otherwise a ringtone URI chosen by the user. */
     val nightSoundUri: String,
+    /** Hours of silence "I'm going out" buys. Doses inside the window move to the end of it. */
+    val goingOutHours: Int,
     /** Push alerts to the carer via ntfy.sh when a dose goes unconfirmed. */
     val alertsEnabled: Boolean,
     val alertTopic: String,
@@ -92,6 +94,7 @@ data class Settings(
         .put("qrSecret", qrSecret)
         .put("nightQrSecret", nightQrSecret)
         .put("nightSoundUri", nightSoundUri)
+        .put("goingOutHours", goingOutHours)
 
     companion object {
         val DEFAULT_DOSES = listOf(
@@ -119,6 +122,7 @@ data class Settings(
             qrSecret = secret,
             nightQrSecret = "",
             nightSoundUri = "",
+            goingOutHours = 2,
             alertsEnabled = false,
             alertTopic = "",
             alertAfterMin = 15,
@@ -149,6 +153,7 @@ data class Settings(
                 qrSecret = o.optString("qrSecret", secretIfMissing).ifEmpty { secretIfMissing },
                 nightQrSecret = o.optString("nightQrSecret", ""),
                 nightSoundUri = o.optString("nightSoundUri", ""),
+                goingOutHours = o.optInt("goingOutHours", d.goingOutHours),
                 alertsEnabled = o.optBoolean("alertsEnabled", false),
                 alertTopic = o.optString("alertTopic", ""),
                 alertAfterMin = o.optInt("alertAfterMin", 15),

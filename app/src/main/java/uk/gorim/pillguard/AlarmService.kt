@@ -74,6 +74,11 @@ class AlarmService : Service() {
         if (key == null) { stopSelf(); return START_NOT_STICKY }
 
         val store = Store.get(this)
+        // He is out. Nothing rings; the scheduler has already moved the doses past the window.
+        if (store.isQuiet && key != AlarmScheduler.TEST_KEY) {
+            AlarmScheduler.reschedule(this)
+            stopSelf(); return START_NOT_STICKY
+        }
         val isTest = key == AlarmScheduler.TEST_KEY
         val inst = if (isTest) null else store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == key }
         val label = if (isTest) "TEST" else inst?.label ?: store.labelFor(key)

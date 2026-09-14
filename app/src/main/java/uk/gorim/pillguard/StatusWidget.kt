@@ -108,8 +108,10 @@ class StatusWidget : AppWidgetProvider() {
                 candidates += it.effectiveMillis - s.eatBeforeMin * 60_000L
                 candidates += it.effectiveMillis
             }
-            // Fallback so a stale widget never sits there for hours (e.g. after a day rollover).
-            candidates += now + 30 * 60_000L
+            // Day rollover, so "no pill scheduled" becomes tomorrow's first dose. This used to be a
+            // 30-minute fallback: 48 device wake-ups a day for a widget whose text only changes a
+            // handful of times. The clock on it is a Chronometer and ticks without waking anything.
+            candidates += TimeFmt.millisOf(TimeFmt.dateOf(now).plusDays(1), 0)
             val at = candidates.filter { it > now }.minOrNull() ?: return
             val pi = PendingIntent.getBroadcast(
                 ctx, RC_REFRESH, Intent(ctx, StatusWidget::class.java).setAction(ACTION_REFRESH),

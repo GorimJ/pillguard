@@ -20,7 +20,12 @@ class MealActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
+        // Lit long enough to be noticed, then allowed to sleep — an ignored reminder should not
+        // hold the display on until the next meal.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+            { runCatching { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } }, 120_000
+        )
         setContentView(R.layout.activity_meal)
         bind(intent)
 

@@ -24,6 +24,9 @@ Rules built in (all editable in Settings, behind the carer PIN):
   a dose that was already overdue is left where it is, because it is still owed. The widget says
   "Out — alarms off" for the duration, and one tap on it (or on the notification) ends the outing
   early and puts any moved dose back at its own time. The carer gets a note at both ends.
+  A "Longer" button adds an hour at a time, up to twelve: before confirming it stretches the window
+  on offer (and the list of what it covers with it), and while he is already out it pushes the end
+  back and carries the deferred doses along, so running late costs one tap rather than a decision.
 - A manual scan from the main screen only counts as a dose if one is due or the next is within 60 minutes; otherwise it is just logged.
 - History shows a day-by-day diary and can share it as text or CSV.
 - An untaken dose is logged as missed once the following dose becomes due.

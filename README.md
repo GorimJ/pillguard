@@ -58,6 +58,25 @@ text. Alarm button colours are set in explicit styles using `backgroundTint` (th
 attribute MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme
 cannot substitute its own colours for them.
 
+## Battery
+
+An alarm app should cost almost nothing when it is not ringing. What it does between alarms:
+
+- One AlarmManager alarm for the next dose, one for the next meal reminder, and one widget refresh
+  armed at the next moment the widget's text actually changes (a window opening or closing, a dose
+  falling due, midnight). Nothing polls. The widget's `updatePeriodMillis` is 0 — the system's own
+  periodic widget update is off — and its clock is a Chronometer, which counts down in the launcher
+  without waking the app.
+- The wake lock is held only while a sound is actually playing. Quiet stretches — the three minutes
+  after "Get pill", the minute while the scanner is open — end on an AlarmManager alarm instead, so
+  the CPU can sleep through them.
+- Each ringing bout vibrates for its first minute and then stops; the sound carries on. A vibration
+  motor running for an hour is one of the most expensive things a phone can do.
+- The alarm and meal screens hold the display awake for two minutes, then let it sleep normally. An
+  unanswered alarm used to keep the screen lit at full brightness for as long as it rang.
+
+Settings are parsed once and kept in memory rather than re-read from storage on every access.
+
 ## Volume
 
 Pill alarms and meal reminders have separate volume settings — ceiling (as a percentage of the

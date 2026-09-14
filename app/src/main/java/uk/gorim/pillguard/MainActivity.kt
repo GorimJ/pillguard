@@ -30,7 +30,8 @@ class MainActivity : AppCompatActivity() {
     companion object { const val EARLY_SCAN_MIN = 60 }
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
-        override fun run() { render(); handler.postDelayed(this, 30_000) }
+        // Only runs while the app is actually on screen; a minute is plenty for times shown to the minute.
+        override fun run() { render(); handler.postDelayed(this, 60_000) }
     }
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->

@@ -30,6 +30,10 @@ class AlarmService : Service() {
         const val ACTION_STOP = "stop"
         const val ACTION_SNOOZE = "snooze"
         const val ACTION_PAUSE = "pause"
+        /** Sent by AlarmManager when a quiet period ends, so no wake lock is held through it. */
+        const val ACTION_RESUME = "resume"
+        /** How long each ringing bout vibrates for. The sound carries on; the motor is expensive. */
+        const val VIBRATE_SECONDS = 60
         const val EXTRA_PAUSE_SECONDS = "pauseSeconds"
         /** Breathing space while he opens the scanner or the delay screen — long enough to act. */
         const val DEFAULT_PAUSE_SECONDS = 60
@@ -40,6 +44,7 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var rampRunnable: Runnable? = null
     private var resumeRunnable: Runnable? = null
+    private var vibrateStop: Runnable? = null
     private var pauseUntilElapsed = 0L
     private var rampAnchor = 0L
     /** Night pills are a different container, so they get their own sound. */
@@ -56,6 +61,11 @@ class AlarmService : Service() {
             ACTION_SNOOZE -> { snooze(auto = false); return START_NOT_STICKY }
             ACTION_PAUSE -> {
                 pauseFor(intent.getIntExtra(EXTRA_PAUSE_SECONDS, DEFAULT_PAUSE_SECONDS))
+                return START_NOT_STICKY
+            }
+            ACTION_RESUME -> {
+                // The quiet period is over: still unconfirmed means back on.
+                if (ringingKey != null) startRinging()
                 return START_NOT_STICKY
             }
         }
@@ -137,8 +147,11 @@ class AlarmService : Service() {
     }
 
     private fun startRinging() {
+        // Both the handler and the AlarmManager backstop can land on this; only ring once.
+        if (player != null) return
+        cancelResumeAlarm()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        // No timeout: the alarm rings until someone interacts with it. Released in releaseRinging().
+        // Held only while a sound is actually playing; stopSound() lets it go.
         if (wakeLock?.isHeld != true) {
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pillguard:alarm").apply { acquire() }
         }
@@ -183,6 +196,12 @@ class AlarmService : Service() {
         val pattern = longArrayOf(0, 800, 400, 800, 1200)
         val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
         runCatching { vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0), attrs) }
+        // A vibration motor running for an hour is one of the most expensive things a phone can do,
+        // and it has said what it has to say in the first minute. The sound keeps going.
+        vibrateStop?.let { handler.removeCallbacks(it) }
+        val vs = Runnable { runCatching { vibrator?.cancel() } }
+        vibrateStop = vs
+        handler.postDelayed(vs, VIBRATE_SECONDS * 1_000L)
 
         startVolumeRamp()
     }
@@ -229,8 +248,37 @@ class AlarmService : Service() {
     private fun stopSound() {
         rampRunnable?.let { handler.removeCallbacks(it) }
         rampRunnable = null
+        vibrateStop?.let { handler.removeCallbacks(it) }
+        vibrateStop = null
         runCatching { player?.stop() }; runCatching { player?.release() }; player = null
         runCatching { vibrator?.cancel() }
+        // Nothing is making noise, so nothing needs the CPU held awake. An unconfirmed dose used to
+        // keep a partial wake lock through every quiet minute, which is most of a missed morning.
+        releaseWakeLock()
+    }
+
+    private fun releaseWakeLock() {
+        runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
+        wakeLock = null
+    }
+
+    private fun resumePi() = PendingIntent.getService(
+        this, 7, Intent(this, AlarmService::class.java).setAction(ACTION_RESUME),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    /** Wakes us at the end of a quiet period, so the handler doesn't have to hold the CPU for it. */
+    private fun armResumeAlarm(seconds: Int) {
+        val am = getSystemService(android.app.AlarmManager::class.java)
+        runCatching {
+            am.setExactAndAllowWhileIdle(
+                android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + seconds * 1_000L, resumePi()
+            )
+        }
+    }
+
+    private fun cancelResumeAlarm() {
+        runCatching { getSystemService(android.app.AlarmManager::class.java).cancel(resumePi()) }
     }
 
     /**
@@ -244,6 +292,7 @@ class AlarmService : Service() {
         if (resumeRunnable != null && until <= pauseUntilElapsed) return
         pauseUntilElapsed = until
         stopSound()
+        armResumeAlarm(seconds)
         Store.get(this).log("${Store.get(this).labelFor(k)} alarm quiet for ${seconds}s while he deals with it")
         resumeRunnable?.let { handler.removeCallbacks(it) }
         val r = Runnable {
@@ -257,10 +306,10 @@ class AlarmService : Service() {
     private fun releaseRinging() {
         resumeRunnable?.let { handler.removeCallbacks(it) }
         resumeRunnable = null
+        cancelResumeAlarm()
         stopSound()
         rampAnchor = 0L
-        runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
-        wakeLock = null
+        releaseWakeLock()
         ringingKey = null
     }
 
@@ -273,7 +322,8 @@ class AlarmService : Service() {
     override fun onDestroy() {
         runCatching { player?.release() }
         runCatching { vibrator?.cancel() }
-        runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
+        vibrateStop?.let { handler.removeCallbacks(it) }
+        releaseWakeLock()
         ringingKey = null
         super.onDestroy()
     }

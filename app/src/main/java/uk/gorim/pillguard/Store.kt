@@ -31,17 +31,27 @@ class Store private constructor(ctx: Context) {
     }
 
     // ---- settings ----
+    /** Parsed once and kept: settings are read many times per screen refresh and per alarm tick. */
+    @Volatile private var cached: Settings? = null
+
     var settings: Settings
         get() {
+            cached?.let { return it }
             val s = prefs.getString(K_SETTINGS, null)
-            val secret = newSecret()
-            val parsed = if (s == null) Settings.defaults(secret) else Settings.fromJson(JSONObject(s), secret)
+            // Only mint a secret when one is actually missing — this used to run SecureRandom on
+            // every single read of the settings.
+            var parsed = if (s == null) Settings.defaults(newSecret()) else Settings.fromJson(JSONObject(s), "")
+            if (parsed.qrSecret.isEmpty()) parsed = parsed.copy(qrSecret = newSecret())
             if (s == null || JSONObject(s).optString("qrSecret", "").isEmpty()) {
                 prefs.edit().putString(K_SETTINGS, parsed.toJson().toString()).apply()
             }
+            cached = parsed
             return parsed
         }
-        set(v) = prefs.edit().putString(K_SETTINGS, v.toJson().toString()).apply()
+        set(v) {
+            cached = v
+            prefs.edit().putString(K_SETTINGS, v.toJson().toString()).apply()
+        }
 
     /** One-off default changes carried across to installs that already have settings saved. */
     fun migrate() {

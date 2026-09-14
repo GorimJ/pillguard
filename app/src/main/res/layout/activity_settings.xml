@@ -169,6 +169,17 @@
                 android:text="Cancel test alarm" />
         </LinearLayout>
 
+        <TextView style="@style/SettingsHeader" android:text="Going out" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:text="The button on the widget and the main screen silences everything for this long. Pills due in that time are moved to the end of it, not skipped; meal reminders in it are dropped." />
+        <LinearLayout style="@style/SettingsRow">
+            <TextView style="@style/SettingsLabel" android:text="Quiet for (hours)" />
+            <EditText android:id="@+id/goingOutHours" style="@style/SettingsNumber" />
+        </LinearLayout>
+
         <TextView style="@style/SettingsHeader" android:text="Pill alarm volume" />
         <TextView
             android:layout_width="match_parent"

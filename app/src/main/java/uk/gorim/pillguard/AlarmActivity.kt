@@ -19,10 +19,13 @@ class AlarmActivity : AppCompatActivity() {
     /** True while the confirm screen is still holding — Back is ignored during this. */
     private var confirmHeld = false
     private var quietTick: Runnable? = null
+    private var screenOff: Runnable? = null
 
     companion object {
         /** Seconds the "yes" is held before it can be pressed. */
         const val DELAY_CONFIRM_HOLD_S = 3
+        /** Seconds the alarm screen forces the display to stay awake. */
+        const val SCREEN_ON_SECONDS = 120
     }
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
@@ -67,7 +70,7 @@ class AlarmActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        keepScreenOnBriefly()
         setContentView(R.layout.activity_alarm)
 
         findViewById<Button>(R.id.btnTaking).setOnClickListener {
@@ -94,7 +97,21 @@ class AlarmActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        keepScreenOnBriefly()
         bind(intent)
+    }
+
+    /**
+     * The screen stays lit long enough to be noticed and acted on, then goes to sleep normally.
+     * It used to be held on for as long as the alarm was up, which on an unanswered dose meant a
+     * screen burning at full brightness for an hour while the phone sat in another room.
+     */
+    private fun keepScreenOnBriefly() {
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        screenOff?.let { handler.removeCallbacks(it) }
+        val r = Runnable { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+        screenOff = r
+        handler.postDelayed(r, SCREEN_ON_SECONDS * 1_000L)
     }
 
     private fun bind(intent: Intent?) {
@@ -126,7 +143,17 @@ class AlarmActivity : AppCompatActivity() {
         if (AlarmService.ringingKey == null) { finish(); return }
         if (k == AlarmScheduler.TEST_KEY) return
         val inst = Store.get(this).engine().window(System.currentTimeMillis()).firstOrNull { it.key == k }
-        if (inst == null || inst.status != DoseStatus.PENDING) finish()
+        if (inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
+        // Pick the countdown back up if it was stopped while the screen was off.
+        val until = Store.get(this).snoozeUntil
+        if (until > System.currentTimeMillis() && quietTick == null) showQuietCountdown(until)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Nothing to update while the screen is off; the service is what keeps time.
+        quietTick?.let { handler.removeCallbacks(it) }
+        quietTick = null
     }
 
     /**
@@ -150,7 +177,7 @@ class AlarmActivity : AppCompatActivity() {
                 if (left > 0) {
                     val total = ((left + 999) / 1000).toInt()
                     going.text = String.format("%d:%02d", total / 60, total % 60)
-                    handler.postDelayed(this, 500)
+                    handler.postDelayed(this, 1_000)
                 } else {
                     endQuietCountdown()
                 }
@@ -329,6 +356,7 @@ class AlarmActivity : AppCompatActivity() {
     override fun onDestroy() {
         countdown?.let { handler.removeCallbacks(it) }
         quietTick?.let { handler.removeCallbacks(it) }
+        screenOff?.let { handler.removeCallbacks(it) }
         super.onDestroy()
     }
 }

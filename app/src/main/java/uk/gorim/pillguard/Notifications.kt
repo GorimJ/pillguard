@@ -19,6 +19,7 @@ object Notifications {
     const val ID_ALARM = 1
     const val ID_INFO = 2
     const val ID_MEAL = 3
+    const val ID_QUIET = 4
 
     fun ensureChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -102,6 +103,35 @@ object Notifications {
     fun cancelMeal(ctx: Context) {
         runCatching { ctx.stopService(Intent(ctx, MealService::class.java)) }
         runCatching { ctx.getSystemService(NotificationManager::class.java).cancel(ID_MEAL) }
+    }
+
+    /** Sits in the shade for the whole "going out" window, with a way back from it. */
+    fun quiet(ctx: Context, until: Long) {
+        ensureChannels(ctx)
+        val open = PendingIntent.getActivity(
+            ctx, 5, Intent(ctx, GoingOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val back = PendingIntent.getBroadcast(
+            ctx, 205, Intent(ctx, AlarmReceiver::class.java).setAction(AlarmScheduler.ACTION_QUIET_END),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = NotificationCompat.Builder(ctx, CH_INFO)
+            .setSmallIcon(R.drawable.ic_notif)
+            .setContentTitle("Out — no alarms until ${TimeFmt.hm(until)}")
+            .setContentText("Pills due in that time have been moved to ${TimeFmt.hm(until)}. Tap when you are home.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Pills due in that time have been moved to ${TimeFmt.hm(until)}. Tap \"I'm home\" to put them back."))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setSilent(true)
+            .setContentIntent(open)
+            .addAction(0, "I'm home", back)
+            .build()
+        runCatching { ctx.getSystemService(NotificationManager::class.java).notify(ID_QUIET, n) }
+    }
+
+    fun cancelQuiet(ctx: Context) {
+        runCatching { ctx.getSystemService(NotificationManager::class.java).cancel(ID_QUIET) }
     }
 
     fun info(ctx: Context, title: String, text: String) {

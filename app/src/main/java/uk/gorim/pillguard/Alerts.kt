@@ -68,6 +68,28 @@ object Alerts {
         send(ctx, "$label medication DELAYED an hour", body.toString(), priority = 5)
     }
 
+    /** "I'm going out": the carer should know the phone has been told to stay quiet, and why. */
+    fun onGoingOut(ctx: Context, plan: Store.GoingOut) {
+        val store = Store.get(ctx)
+        if (!store.settings.alertsEnabled) return
+        val body = StringBuilder("No alarms until ${TimeFmt.hm(plan.until)}.")
+        if (plan.doses.isEmpty()) body.append("\nNo doses fall in that time.")
+        else plan.doses.forEach { (d, at) ->
+            body.append("\n${d.label} dose ${TimeFmt.hm(d.effectiveMillis)} → ${TimeFmt.hm(at)}.")
+        }
+        if (plan.meals.isNotEmpty()) body.append("\nSkipped: ${plan.meals.joinToString()}.")
+        if (plan.waiting.isNotEmpty())
+            body.append("\nStill owed: ${plan.waiting.joinToString { "${it.label} (${TimeFmt.hm(it.effectiveMillis)})" }}.")
+        send(ctx, "Going out until ${TimeFmt.hm(plan.until)}", body.toString(), priority = 3)
+    }
+
+    /** Back before the window was up. */
+    fun onBackHome(ctx: Context) {
+        val store = Store.get(ctx)
+        if (!store.settings.alertsEnabled) return
+        send(ctx, "Home again", "Alarms are back on, and any dose that was moved is back at its own time.", priority = 2)
+    }
+
     /** Called after every dose confirmation: a quiet "taken" note, louder if an alert had gone out first. */
     fun onTaken(ctx: Context, key: String, method: String) {
         val store = Store.get(ctx)

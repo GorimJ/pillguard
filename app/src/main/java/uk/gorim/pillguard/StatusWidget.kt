@@ -11,9 +11,9 @@ import android.os.SystemClock
 import android.widget.RemoteViews
 
 /**
- * Home-screen widget: eating status (colour-coded) and a live countdown to the next pill.
- * The countdown is a Chronometer, which ticks on its own without waking the app; the text
- * and colour are refreshed whenever app state changes and at the next known transition.
+ * Home-screen widget: eating status (colour-coded), a live countdown to the next pill, and the
+ * "I'm going out" button. The countdown is a Chronometer, which ticks on its own without waking
+ * the app; the text and colour are refreshed on state changes and at the next known transition.
  */
 class StatusWidget : AppWidgetProvider() {
     override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
@@ -69,11 +69,22 @@ class StatusWidget : AppWidgetProvider() {
             val open = PendingIntent.getActivity(
                 ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
+            val goOut = PendingIntent.getActivity(
+                ctx, 4, Intent(ctx, GoingOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val quiet = store.isQuiet
             for (id in ids) {
                 val v = RemoteViews(ctx.packageName, R.layout.widget_status)
-                v.setInt(R.id.widgetRoot, "setBackgroundResource", bg)
-                v.setTextViewText(R.id.wHeadline, headline)
-                v.setTextViewText(R.id.wDetail, detail)
+                // While he is out the widget says so instead of nagging about food and pills.
+                v.setInt(R.id.widgetRoot, "setBackgroundResource", if (quiet) R.drawable.widget_bg_grey else bg)
+                v.setTextViewText(R.id.wHeadline, if (quiet) "Out — alarms off" else headline)
+                v.setTextViewText(
+                    R.id.wDetail,
+                    if (quiet) "Back on at ${TimeFmt.hm(store.quietUntil)}." else detail
+                )
+                v.setTextViewText(R.id.wGoingOut, if (quiet) "I'm home — alarms back on" else "I'm going out")
+                v.setOnClickPendingIntent(R.id.wGoingOut, goOut)
                 when {
                     due != null -> {
                         v.setTextViewText(R.id.wNextLabel, "${due.label} pill overdue")
@@ -112,6 +123,7 @@ class StatusWidget : AppWidgetProvider() {
             // 30-minute fallback: 48 device wake-ups a day for a widget whose text only changes a
             // handful of times. The clock on it is a Chronometer and ticks without waking anything.
             candidates += TimeFmt.millisOf(TimeFmt.dateOf(now).plusDays(1), 0)
+            if (store.quietUntil > now) candidates += store.quietUntil
             val at = candidates.filter { it > now }.minOrNull() ?: return
             val pi = PendingIntent.getBroadcast(
                 ctx, RC_REFRESH, Intent(ctx, StatusWidget::class.java).setAction(ACTION_REFRESH),

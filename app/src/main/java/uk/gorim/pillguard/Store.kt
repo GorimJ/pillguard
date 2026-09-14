@@ -112,6 +112,75 @@ class Store private constructor(ctx: Context) {
     /** Any PillGuard code the app currently knows, whichever container it came from. */
     fun matchesAnyQr(text: String?): Boolean = matchesQr(text) || matchesNightQr(text)
 
+    // ---- "I'm going out" ----
+
+    /** Everything stays silent until this instant. 0 = not out. */
+    var quietUntil: Long
+        get() = prefs.getLong("quietUntil", 0)
+        set(v) = prefs.edit().putLong("quietUntil", v).apply()
+
+    val isQuiet: Boolean get() = quietUntil > System.currentTimeMillis()
+
+    /** Marks a dose that going out moved, so coming back early can put it back. */
+    private val goingOutReason = "going out"
+
+    data class GoingOut(
+        val until: Long,
+        /** Doses inside the window, and the time each is moved to. */
+        val doses: List<Pair<DoseInstance, Long>>,
+        val meals: List<String>,
+        /** Already overdue when he left: not moved, just silent until he is back. */
+        val waiting: List<DoseInstance>,
+    )
+
+    /**
+     * What would be silenced by going out for [hours], without changing anything yet — so he can be
+     * told what he is about to switch off before he switches it off.
+     */
+    fun goingOutPreview(hours: Int = settings.goingOutHours, now: Long = System.currentTimeMillis()): GoingOut {
+        val until = now + hours * 3_600_000L
+        val pending = engine().window(now).filter { it.status == DoseStatus.PENDING }
+        // Doses that fall due while he is out get moved to the end of the window. One that is
+        // ALREADY overdue is left exactly where it is: it is a dose he still owes, and quietly
+        // rewriting its time (and everything after it) would hide that. It simply stays silent.
+        val waiting = pending.filter { it.effectiveMillis < now }.sortedBy { it.effectiveMillis }
+        val doses = pending
+            .filter { it.effectiveMillis in now until until }
+            .sortedBy { it.effectiveMillis }
+        // Space them out if two would land on top of each other at the end of the window.
+        val moved = doses.mapIndexed { i, d -> d to until + i * 60 * 60_000L }
+        val meals = if (!settings.mealsEnabled) emptyList() else {
+            val today = TimeFmt.dateOf(now)
+            settings.meals.mapIndexedNotNull { i, m ->
+                val at = TimeFmt.millisOf(today, m.minuteOfDay)
+                if (at in now until until && mealLogic().isDone(today, i, m, now).not())
+                    "${m.label} reminder (${TimeFmt.minuteOfDay(m.minuteOfDay)})" else null
+            }
+        }
+        return GoingOut(until, moved, meals, waiting)
+    }
+
+    /** Starts the quiet window and moves the doses inside it to the end of it. */
+    fun startGoingOut(hours: Int = settings.goingOutHours): GoingOut {
+        val plan = goingOutPreview(hours)
+        quietUntil = plan.until
+        plan.doses.forEach { (d, newTime) ->
+            updateRecord(d.key) { it.copy(shiftedTo = newTime, shiftReason = goingOutReason) }
+            log("${d.label} dose moved ${TimeFmt.hm(d.effectiveMillis)} → ${TimeFmt.hm(newTime)} (going out)")
+        }
+        plan.meals.forEach { log("$it silenced (going out)") }
+        log("Going out — everything quiet until ${TimeFmt.hm(plan.until)}")
+        return plan
+    }
+
+    /** Back early: the quiet ends now and any dose it moved goes back to its own time. */
+    fun endGoingOut() {
+        quietUntil = 0
+        records.values.filter { it.shiftReason == goingOutReason && it.takenAt == 0L }
+            .forEach { r -> updateRecord(r.key) { it.copy(shiftedTo = 0, shiftReason = "") } }
+        log("Back home — alarms back on")
+    }
+
     var setupDone: Boolean
         get() = prefs.getBoolean(K_SETUP_DONE, false)
         set(v) = prefs.edit().putBoolean(K_SETUP_DONE, v).apply()

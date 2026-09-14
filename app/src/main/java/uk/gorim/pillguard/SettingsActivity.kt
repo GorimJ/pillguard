@@ -90,6 +90,7 @@ class SettingsActivity : AppCompatActivity() {
         num(R.id.eatAfter).setText(s.eatAfterMin.toString())
         num(R.id.eatBefore).setText(s.eatBeforeMin.toString())
         num(R.id.snooze).setText(s.reRingMin.toString())
+        num(R.id.goingOutHours).setText(s.goingOutHours.toString())
         findViewById<TextView>(R.id.qrInfo).text = "Current code: ${store.qrPayload}\nPrint it from the QR code screen and stick it on the bottom of the pill container."
 
         findViewById<Button>(R.id.btnAddDose).setOnClickListener { editDose(null) }
@@ -474,6 +475,7 @@ class SettingsActivity : AppCompatActivity() {
             eatAfterMin = num(R.id.eatAfter).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatAfterMin,
             eatBeforeMin = num(R.id.eatBefore).text.toString().toIntOrNull()?.coerceIn(0, 240) ?: s.eatBeforeMin,
             reRingMin = num(R.id.snooze).text.toString().toIntOrNull()?.coerceIn(1, 60) ?: s.reRingMin,
+            goingOutHours = num(R.id.goingOutHours).text.toString().toIntOrNull()?.coerceIn(1, 12) ?: s.goingOutHours,
             pin = if (pinText.isEmpty()) s.pin else pinText,
             alarmVolumePct = findViewById<android.widget.SeekBar>(R.id.volSeek).progress.coerceIn(10, 100),
             alarmStartVolumePct = num(R.id.volStart).text.toString().toIntOrNull()?.coerceIn(1, 100) ?: s.alarmStartVolumePct,

@@ -30,7 +30,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 val now = System.currentTimeMillis()
                 val logic = store.mealLogic()
                 val due = logic.next(now - 1)   // what should be ringing now
-                val ring = store.settings.mealsEnabled && due != null && due.key == key && logic.shouldRing(now)
+                val ring = store.settings.mealsEnabled && !store.isQuiet &&
+                    due != null && due.key == key && logic.shouldRing(now)
                 if (ring) {
                     val d = due!!
                     val st = store.engine().eatStatus(now)
@@ -61,6 +62,18 @@ class AlarmReceiver : BroadcastReceiver() {
                     }
                 }
                 // Arm the next repeat (or the next meal) regardless.
+                AlarmScheduler.reschedule(ctx)
+            }
+            action == AlarmScheduler.ACTION_QUIET_OVER -> {
+                // The outing is over: notification away, everything armed again.
+                Store.get(ctx).log("Going-out quiet ended")
+                Notifications.cancelQuiet(ctx)
+                AlarmScheduler.reschedule(ctx)
+            }
+            action == AlarmScheduler.ACTION_QUIET_END -> {
+                Store.get(ctx).endGoingOut()
+                Alerts.onBackHome(ctx)
+                Notifications.cancelQuiet(ctx)
                 AlarmScheduler.reschedule(ctx)
             }
             action == AlarmScheduler.ACTION_MEAL_ATE -> {

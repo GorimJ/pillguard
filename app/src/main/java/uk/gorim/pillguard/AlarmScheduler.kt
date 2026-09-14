@@ -18,6 +18,11 @@ object AlarmScheduler {
     const val EXTRA_TEXT = "text"
 
     const val ACTION_ALERT = "uk.gorim.pillguard.ALERT"
+    /** The "I'm going out" window has run out. */
+    const val ACTION_QUIET_OVER = "uk.gorim.pillguard.QUIET_OVER"
+    /** He is back early and wants the alarms back. */
+    const val ACTION_QUIET_END = "uk.gorim.pillguard.QUIET_END"
+    private const val RC_QUIET = 108
     const val ACTION_MEAL = "uk.gorim.pillguard.MEAL"
     const val ACTION_MEAL_ATE = "uk.gorim.pillguard.MEAL_ATE"
     const val ACTION_MEAL_STOP = "uk.gorim.pillguard.MEAL_STOP"
@@ -78,19 +83,37 @@ object AlarmScheduler {
         val snoozeUntil = store.snoozeUntil
 
         am.cancel(dosePi(ctx, null))
+        // While he is out nothing rings, so an overdue dose must be armed for the END of the window
+        // rather than for "now" — otherwise it fires, gets silenced, re-arms, and spins.
+        val notBefore = maxOf(now, store.quietUntil)
         when {
             due != null && AlarmService.ringingKey == due.key -> Unit // already ringing; leave it alone
-            due != null && snoozeUntil > now -> setExact(am, ctx, snoozeUntil, dosePi(ctx, due.key))
+            due != null && snoozeUntil > now -> setExact(am, ctx, maxOf(snoozeUntil, notBefore), dosePi(ctx, due.key))
             due != null -> {
                 // Overdue and not snoozed: arm an alarm-clock alarm for "now". Going through AlarmManager
                 // (rather than broadcasting directly) is what grants the foreground-service start exemption.
                 store.snoozeUntil = 0
-                setExact(am, ctx, now, dosePi(ctx, due.key))
+                setExact(am, ctx, notBefore, dosePi(ctx, due.key))
             }
-            next != null -> setExact(am, ctx, next.effectiveMillis, dosePi(ctx, next.key))
+            next != null -> setExact(am, ctx, maxOf(next.effectiveMillis, notBefore), dosePi(ctx, next.key))
         }
 
         val s = store.settings
+        val quietUntil = store.quietUntil
+        val quiet = quietUntil > now
+        // Wake up when the quiet window runs out, to clear its notification and re-arm everything.
+        val quietPi = PendingIntent.getBroadcast(
+            ctx, RC_QUIET, Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_QUIET_OVER),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        am.cancel(quietPi)
+        if (quiet) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, quietUntil + 1000, quietPi)
+            Notifications.quiet(ctx, quietUntil)
+        } else {
+            Notifications.cancelQuiet(ctx)
+            if (quietUntil > 0) store.quietUntil = 0
+        }
         StatusWidget.updateAll(ctx)
 
         // Carer alert if the current/next dose is still unconfirmed N minutes after it was due.
@@ -103,18 +126,20 @@ object AlarmScheduler {
             }
         }
 
-        // Meal reminders (bugle).
+        // Meal reminders (bugle). While he is out, look past the quiet window instead of arming
+        // inside it — a reminder he cannot act on is exactly what he asked not to have.
         am.cancel(mealPi(ctx, null))
-        store.mealLogic().next(now)?.let { d ->
+        store.mealLogic().next(maxOf(now, quietUntil))?.let { d ->
             // setAlarmClock, like the dose alarms: it is the alarm-clock grade of alarm that carries
             // the exemption letting the reminder start its foreground service and put a screen up.
-            setExact(am, ctx, maxOf(d.fireAt, now + 1000), mealPi(ctx, d.key))
+            setExact(am, ctx, maxOf(d.fireAt, quietUntil, now + 1000), mealPi(ctx, d.key))
         }
 
         // Eating-window reminders.
         am.cancel(infoPi(ctx, RC_INFO_OPEN, null, null))
         am.cancel(infoPi(ctx, RC_INFO_CLOSE, null, null))
         val last = engine.lastTaken(now)
+        if (quiet) return   // no "OK to eat" / "stop eating" pings while he is out either
         if (last != null) {
             val opens = last.takenAt + s.eatAfterMin * 60_000L
             val closes = next?.let { it.effectiveMillis - s.eatBeforeMin * 60_000L } ?: 0L

@@ -54,6 +54,15 @@
             android:theme="@style/Theme.PillGuard.Meal" />
 
         <activity
+            android:name=".GoingOutActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.PillGuard.Out" />
+
+        <activity
             android:name=".LockedCaptureActivity"
             android:exported="false"
             android:showWhenLocked="true"

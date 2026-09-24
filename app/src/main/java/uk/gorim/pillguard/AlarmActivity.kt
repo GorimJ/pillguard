@@ -20,6 +20,8 @@ class AlarmActivity : AppCompatActivity() {
     private var confirmHeld = false
     private var quietTick: Runnable? = null
     private var screenOff: Runnable? = null
+    /** The dose time, kept so it can go back in place when the "Take pills now" spell is over. */
+    private var timeText: String = ""
 
     companion object {
         /** Seconds the "yes" is held before it can be pressed. */
@@ -57,9 +59,9 @@ class AlarmActivity : AppCompatActivity() {
     /** Names the container when the night pills carry a code of their own. */
     private fun scanPrompt(): String {
         val store = Store.get(this)
-        if (!store.hasSeparateNightQr) return "Point the camera at the QR code on the pill container"
-        return if (store.isNightKey(key)) "Point the camera at the code on the NIGHT container"
-        else "Point the camera at the code on the DAYTIME container"
+        if (!store.hasSeparateNightQr) return "Scan the code on the pill container to confirm done"
+        return if (store.isNightKey(key)) "Scan the code on the NIGHT container to confirm done"
+        else "Scan the code on the DAYTIME container to confirm done"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,9 +84,9 @@ class AlarmActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnGoing).setOnClickListener {
             val mins = Store.get(this).settings.reRingMin
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_SNOOZE))
-            // Stay on screen: he needs Scan in front of him when he gets back with the container.
-            // Drive the countdown from our own clock — the service writes snoozeUntil a moment
-            // later, and reading it straight away finds the old value and ends the countdown at once.
+            // Stay on screen: he needs the Done button in front of him when he gets back with the
+            // container. Drive the countdown from our own clock — the service writes snoozeUntil a
+            // moment later, and reading it straight away finds the old value and ends it at once.
             showQuietCountdown(System.currentTimeMillis() + mins * 60_000L)
         }
         findViewById<android.widget.ImageButton>(R.id.btnDelay).setOnClickListener { confirmDelay() }
@@ -119,14 +121,16 @@ class AlarmActivity : AppCompatActivity() {
         key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: store.ringingKey
         val k = key
         if (k == AlarmScheduler.TEST_KEY) {
-            findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(System.currentTimeMillis())
+            timeText = TimeFmt.hm(System.currentTimeMillis())
+            findViewById<TextView>(R.id.alarmTime).text = timeText
             // The triangle stays: a test you cannot rehearse the delay on is not much of a test.
             findViewById<android.widget.ImageButton>(R.id.btnDelay).alpha = 1f
             return
         }
         val inst = k?.let { kk -> store.engine().window(System.currentTimeMillis()).firstOrNull { it.key == kk } }
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
-        findViewById<TextView>(R.id.alarmTime).text = TimeFmt.hm(inst.effectiveMillis)
+        timeText = TimeFmt.hm(inst.effectiveMillis)
+        findViewById<TextView>(R.id.alarmTime).text = timeText
         applyNightTint(inst.night)
         if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown(store.snoozeUntil)
         else if (quietTick == null) endQuietCountdown()
@@ -157,8 +161,10 @@ class AlarmActivity : AppCompatActivity() {
     }
 
     /**
-     * While the alarm is quiet after "Get pill", that button becomes a live countdown and Scan
-     * stays ready. When the quiet runs out the alarm restarts and the button comes back.
+     * While the alarm is quiet after "Get pill", the screen stops telling him what time the dose
+     * was and tells him what to do instead: a spinner over "Take pills now". The Get pill button
+     * becomes a live countdown, and Scan becomes "Done", which is what he is about to be.
+     * When the quiet runs out the alarm restarts and the screen goes back to the time.
      */
     private fun showQuietCountdown(until: Long) {
         val going = findViewById<Button>(R.id.btnGoing)
@@ -166,6 +172,10 @@ class AlarmActivity : AppCompatActivity() {
         quietTick?.let { handler.removeCallbacks(it) }
 
         bar.visibility = android.view.View.VISIBLE
+        val time = findViewById<TextView>(R.id.alarmTime)
+        time.text = "Take pills now"
+        time.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 60f)
+        findViewById<Button>(R.id.btnTaking).text = "Done"
         going.isEnabled = false
         going.backgroundTintList =
             android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, R.color.btn_waiting_bg))
@@ -191,6 +201,10 @@ class AlarmActivity : AppCompatActivity() {
         quietTick?.let { handler.removeCallbacks(it) }
         quietTick = null
         findViewById<android.widget.LinearLayout>(R.id.waitingBar).visibility = android.view.View.GONE
+        val time = findViewById<TextView>(R.id.alarmTime)
+        time.text = timeText
+        time.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 88f)
+        findViewById<Button>(R.id.btnTaking).text = "Scan"
         val going = findViewById<Button>(R.id.btnGoing)
         going.isEnabled = true
         going.backgroundTintList =

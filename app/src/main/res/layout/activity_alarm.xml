@@ -18,32 +18,25 @@
         android:paddingTop="88dp"
         android:paddingBottom="16dp">
 
-        <!-- Shown only while the alarm is quiet after "Get pill". -->
+        <!-- Shown only while the alarm is quiet after "Get pill": a spinner above the big
+             "Take pills now", which takes the time's place for the duration. -->
         <LinearLayout
             android:id="@+id/waitingBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="4dp"
+            android:gravity="center"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="10dp"
             android:visibility="gone">
 
             <ProgressBar
                 android:id="@+id/waitingSpinner"
                 style="?android:attr/progressBarStyle"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:indeterminate="true"
                 android:indeterminateTint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:text="Getting pills…"
-                android:textColor="@color/white"
-                android:textSize="30sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <!-- Shown only for the night pills, so the violet tint is not the only signal: a colour
@@ -68,7 +61,7 @@
             android:textColor="#FFD166"
             android:textSize="88sp"
             android:textStyle="bold"
-            android:maxLines="1"
+            android:maxLines="2"
             android:gravity="center" />
 
         <Button

@@ -5,7 +5,7 @@
     <color name="brand_dark">#143F78</color>
     <color name="ok_green">#0E5C27</color>        <!-- 7.1:1 on ok_green_bg -->
     <color name="ok_green_bg">#DDF5E3</color>
-    <color name="no_red">#7A1710</color>          <!-- 8.4:1 on no_red_bg -->
+    <color name="no_red">#7A1710</color>          <!-- 8.4:1 on no_red_bg, 10.7:1 on white -->
     <color name="no_red_bg">#FBDDDB</color>
     <color name="warn_amber">#6F4200</color>      <!-- 7.4:1 on warn_amber_bg -->
     <color name="warn_amber_bg">#FFECC7</color>
@@ -21,6 +21,8 @@
          White 11.5:1, amber #FFD166 8.0:1, and slate-on-white for the second button 11.5:1. -->
     <color name="out_bg">#1F3A5F</color>
     <color name="out_text">#1F3A5F</color>
+    <!-- "I'm going out" on the main screen: white on this red is 8.9:1. -->
+    <color name="out_btn_red">#8F1D16</color>
     <!-- Solid widget blocks: white text sits on these (8.4:1, 8.9:1, 8.6:1). -->
     <color name="widget_green">#0F5A25</color>
     <color name="widget_red">#8F1D16</color>

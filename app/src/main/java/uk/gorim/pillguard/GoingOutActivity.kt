@@ -24,6 +24,9 @@ class GoingOutActivity : AppCompatActivity() {
     companion object {
         /** Long enough for an appointment and the journey either side of it. */
         const val MAX_HOURS = 12
+
+        /** "2 hours", "1 hour" — the button labels are the only place the length is stated. */
+        fun hoursLabel(n: Int) = if (n == 1) "1 hour" else "$n hours"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,13 +50,16 @@ class GoingOutActivity : AppCompatActivity() {
         val title = findViewById<TextView>(R.id.outTitle)
         val until = findViewById<TextView>(R.id.outUntil)
         val detail = findViewById<TextView>(R.id.outDetail)
-        // Match the alarm screens: the white buttons' text picks up the screen colour.
-        val alt = ContextCompat.getColor(this, R.color.out_text)
-        no.setTextColor(alt); longer.setTextColor(alt)
+        // Match the alarm screens: the white buttons' text picks up the screen colour. The way
+        // out of the screen is red, so it cannot be mistaken for one of the two going-out choices.
+        longer.setTextColor(ContextCompat.getColor(this, R.color.out_text))
+        no.setTextColor(ContextCompat.getColor(this, R.color.no_red))
 
         if (store.isQuiet) {
+            title.visibility = android.view.View.VISIBLE
+            until.visibility = android.view.View.VISIBLE
             title.text = "You are out"
-            until.text = "Quiet until ${TimeFmt.hm(store.quietUntil)}"
+            until.text = "Alarms back at ${TimeFmt.hm(store.quietUntil)}"
             val moved = store.records.values
                 .filter { it.shiftReason == "going out" && it.takenAt == 0L }
                 .map { store.labelFor(it.key) }
@@ -69,7 +75,9 @@ class GoingOutActivity : AppCompatActivity() {
                 finish()
             }
             // Still out and running late: one tap buys another hour, pills and all.
-            longer.text = "Another hour — until ${TimeFmt.hm(store.quietUntil + 3_600_000L)}"
+            longer.isEnabled = true
+            longer.alpha = 1f
+            longer.text = "Another hour"
             longer.setOnClickListener {
                 val plan = store.extendGoingOut(1)
                 Alerts.onGoingOut(this, plan)
@@ -77,26 +85,28 @@ class GoingOutActivity : AppCompatActivity() {
                 Ui.toast(this, "Quiet until ${TimeFmt.hm(plan.until)}.")
                 render()
             }
+            // Not red here: on this screen leaving is the normal thing to do, not the way out.
+            no.setTextColor(ContextCompat.getColor(this, R.color.out_text))
             no.text = "Leave it quiet"
             no.setOnClickListener { finish() }
             return
         }
 
         val plan = store.goingOutPreview(hours)
-        title.text = "Going out?"
-        until.text = "Quiet until ${TimeFmt.hm(plan.until)}"
+        // No heading and no end time: the buttons say how long, and what is being silenced is the
+        // only thing on the screen he has to read.
+        title.visibility = android.view.View.GONE
+        until.visibility = android.view.View.GONE
 
         val lines = ArrayList<String>()
-        plan.doses.forEach { (d, at) ->
-            lines += "${d.label} pills ${TimeFmt.hm(d.effectiveMillis)} → ${TimeFmt.hm(at)}"
-        }
+        plan.doses.forEach { (d, _) -> lines += "${d.label} pills — moved" }
         plan.meals.forEach { lines += "$it — skipped" }
         // An overdue dose is not moved and not hidden: it is still owed.
-        plan.waiting.forEach { lines += "${it.label} pills (${TimeFmt.hm(it.effectiveMillis)}) still to take" }
-        detail.text = (if (lines.isEmpty()) "Nothing is due in the next $hours hours anyway."
-        else "In that time:\n" + lines.joinToString("\n")) + "\n\n($hours hours)"
+        plan.waiting.forEach { lines += "${it.label} pills — still to take" }
+        detail.text = if (lines.isEmpty()) "Nothing is due in that time."
+        else "In that time:\n" + lines.joinToString("\n")
 
-        yes.text = "Yes, I'm going out"
+        yes.text = "Going out for ${hoursLabel(hours)}"
         yes.setOnClickListener {
             val done = store.startGoingOut(hours)
             // A dose that was ringing as he left stops now.
@@ -114,12 +124,12 @@ class GoingOutActivity : AppCompatActivity() {
         } else {
             longer.isEnabled = true
             longer.alpha = 1f
-            // Adding an hour re-reads the whole plan, so the list below always matches the button above.
-            longer.text = "Longer — until ${TimeFmt.hm(plan.until + 3_600_000L)}"
+            // Adding an hour re-reads the whole plan, so the list above always matches the buttons.
+            longer.text = "Longer — ${hoursLabel(hours + 1)}"
             longer.setOnClickListener { hours += 1; render() }
         }
 
-        no.text = "No, stay as it is"
+        no.text = "Cancel"
         no.setOnClickListener { finish() }
     }
 }

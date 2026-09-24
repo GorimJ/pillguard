@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -88,15 +89,18 @@
             android:textAllCaps="false"
             android:text="Scan QR — taking a dose now" />
 
+        <!-- Red, because it is the one button on this screen that turns the alarms off. -->
         <Button
             android:id="@+id/btnGoingOut"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:minHeight="64dp"
             android:textSize="20sp"
             android:textAllCaps="false"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/out_btn_red"
             android:text="I'm going out — no alarms for a while" />
 
         <TextView

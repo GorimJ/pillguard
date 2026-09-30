@@ -10,4 +10,18 @@
         app:zxing_framing_rect_width="320dp"
         app:zxing_framing_rect_height="320dp"
         app:zxing_scanner_layout="@layout/zxing_scanner_big" />
+
+    <!-- Backing out of the scanner. Top-left, away from the system accessibility button in the
+         bottom-right corner, and last in the file so it sits above the camera preview. -->
+    <ImageButton
+        android:id="@+id/btnScanClose"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="10dp"
+        android:padding="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_scan_close"
+        android:scaleType="fitCenter"
+        android:contentDescription="Close the scanner and go back" />
 </merge>

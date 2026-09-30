@@ -8,7 +8,7 @@ Rules built in (all editable in Settings, behind the carer PIN):
 - No eating until 30 min after a dose was actually taken (QR scanned).
 - Eating must finish 90 min before the next dose.
 - "I ate something" pushes the *next* dose only, to at least 90 min after the meal.
-- The alarm screen shows the dose time and two buttons — "Get pill" and "Scan". "Get pill" mutes the alarm for 3 minutes but leaves the screen up: the time is replaced by "Take pills now" in the same large type with a spinner above it, the button greys out and counts down, and the second button becomes "Done" for when he comes back with the container. The scanner says "scan the code … to confirm done", so both screens use the same word. The sound returns if the dose is still unconfirmed. It never stops ringing on its own, and repeats every 3 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
+- The alarm screen shows the dose time and two buttons — "Get pill" and "Scan". "Get pill" mutes the alarm for 3 minutes but leaves the screen up: the time is replaced by "Take pills now" in the same large type with a spinner above it, the button greys out and counts down, and the second button becomes "Done" for when he comes back with the container. The scanner says "scan the code … to confirm done", so both screens use the same word. The scanner carries a large red X in its top-left corner, which closes the camera and puts the alarm screen back exactly as it was — opening it by mistake should not be a trap. The sound returns if the dose is still unconfirmed. It never stops ringing on its own, and repeats every 3 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
 - A red warning triangle in the top-right puts the dose off by an hour, at most twice per dose, with a loud ntfy ping to the carer each time. It sits top-right because the system accessibility button lives bottom-right. The test alarm shows the triangle too, so the whole flow can be rehearsed — the confirm screen says it is only a test and nothing is shifted or sent. Confirming is a full screen with two large buttons; the "yes" is held for 3 seconds, and Back is inert for that same hold so a panicked jab at it cannot bounce him back to a ringing alarm.
 - Opening the scanner or the delay screen silences the alarm for 60 seconds — room to deal with it in an appointment or a cinema without the noise. If the dose is still unconfirmed when the minute is up, the alarm resumes at whatever level the ramp has reached.
 - The last dose of the day is a different set of pills, so it is treated as its own habit: a low bell
@@ -50,6 +50,7 @@ link. Icons and a title were tried and removed — at a glance they read as more
 labels are sentence case; all-caps is harder to read, not easier, because the word shape is lost.
 Where a screen can say the same thing in a heading or on a button, it says it on the button: the
 going-out screen lost its question and its end times that way and now fits without scrolling.
+Every screen has a visible way back out that is not the system Back gesture.
 
 ## Telling the alarms apart
 
@@ -67,7 +68,8 @@ Every text/background pair on the alarm, night, meal, going-out, main and widget
 contrast-checked; on the violet night screen white is 10.6:1, the amber time 7.4:1 and the override
 hint 7.2:1, on the slate going-out screen white is 11.5:1, the amber 8.0:1 and the red "Cancel"
 10.7:1 on its white button, the red "I'm going out" button on the main screen carries white at
-8.9:1, and the lowest ratio
+8.9:1, the scanner's red close button carries its white cross at 5.6:1 and wears a white ring so
+the disc lifts off the black mask, and the lowest ratio
 anywhere is 5.45:1, against a WCAG AA minimum of 4.5:1 for body text and 3:1 for large text. Alarm
 button colours are set in explicit styles using `backgroundTint` (the app-namespace attribute
 MaterialButton actually reads — `android:backgroundTint` is silently ignored) so the theme cannot

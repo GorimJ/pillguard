@@ -7,7 +7,8 @@ Rules built in (all editable in Settings, behind the carer PIN):
 - Doses at fixed times of day (defaults 07:00, 10:30, 14:30, 18:30, 22:30).
 - No eating until 30 min after a dose was actually taken (QR scanned).
 - Eating must finish 90 min before the next dose.
-- "I ate something" pushes the *next* dose only, to at least 90 min after the meal.
+- "I've just ate" pushes the *next* dose only, to at least 90 min after the meal. The button said
+  "I ate something" until he pointed out that the casual wording made it easy not to bother.
 - The alarm screen shows the dose time and two buttons — "Get pill" and "Scan". "Get pill" mutes the alarm for 3 minutes but leaves the screen up: the time is replaced by "Take pills now" in the same large type with a spinner above it, the button greys out and counts down, and the second button becomes "Done" for when he comes back with the container. The scanner says "scan the code … to confirm done", so both screens use the same word. The scanner carries a large red X in its top-left corner, which closes the camera and puts the alarm screen back exactly as it was — opening it by mistake should not be a trap. If the camera is still open when the quiet runs out and the alarm starts again, it closes itself and hands the screen back to the alarm — a ringing alarm behind a viewfinder reads as a stuck phone. The sound returns if the dose is still unconfirmed. It never stops ringing on its own, and repeats every 3 minutes until the QR code on the container is scanned, or the carer PIN is used (logged as an override).
 - A dose slot can be marked "No scan needed" (Settings → dose time), and the first dose of the day
   is, because his carer is with him and the pills are already in front of him at that hour, when
@@ -56,7 +57,8 @@ link. Icons and a title were tried and removed — at a glance they read as more
 labels are sentence case; all-caps is harder to read, not easier, because the word shape is lost.
 Where a screen can say the same thing in a heading or on a button, it says it on the button: the
 going-out screen lost its question and its end times that way and now fits without scrolling.
-Every screen has a visible way back out that is not the system Back gesture.
+Every screen has a visible way back out that is not the system Back gesture. Button wording is his
+and his father's, not a style guide's: a label that sounds optional gets treated as optional.
 
 ## Telling the alarms apart
 

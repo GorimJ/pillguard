@@ -11,8 +11,8 @@ android {
         applicationId = "uk.gorim.pillguard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "1.0.4"
+        versionCode = 32
+        versionName = "1.0.5"
     }
 
     signingConfigs {

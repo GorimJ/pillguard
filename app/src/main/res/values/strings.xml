@@ -3,7 +3,8 @@
     <string name="settings">Settings</string>
     <string name="print_qr">Print QR code</string>
     <string name="history">History</string>
-    <string name="i_ate">I ate something</string>
+    <!-- His words: "I ate something" reads as casual enough to skip. -->
+    <string name="i_ate">I\'ve just ate</string>
     <string name="snooze">Snooze</string>
     <string name="scan_qr">Scan QR on pill container</string>
     <string name="carer_override">Carer override</string>

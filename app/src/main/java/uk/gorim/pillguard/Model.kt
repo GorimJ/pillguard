@@ -13,12 +13,24 @@ import java.time.format.DateTimeFormatter
  *
  * [night] marks a slot that is a different set of pills from a different container: its own sound,
  * its own screen colour, and optionally its own QR code.
+ *
+ * [noScan] drops the QR requirement for one slot. The scan exists to prove he was at the container
+ * when he said he had taken them; where someone is with him and the pills are already in front of
+ * him, the camera is an obstacle rather than a safeguard, and the slot is cleared with one tap.
  */
-data class DoseTime(val minuteOfDay: Int, val label: String, val night: Boolean = false) {
-    fun toJson(): JSONObject = JSONObject().put("m", minuteOfDay).put("l", label).put("n", night)
+data class DoseTime(
+    val minuteOfDay: Int,
+    val label: String,
+    val night: Boolean = false,
+    val noScan: Boolean = false,
+) {
+    fun toJson(): JSONObject = JSONObject()
+        .put("m", minuteOfDay).put("l", label).put("n", night).put("ns", noScan)
 
     companion object {
-        fun fromJson(o: JSONObject) = DoseTime(o.getInt("m"), o.getString("l"), o.optBoolean("n", false))
+        fun fromJson(o: JSONObject) = DoseTime(
+            o.getInt("m"), o.getString("l"), o.optBoolean("n", false), o.optBoolean("ns", false)
+        )
     }
 }
 
@@ -98,7 +110,7 @@ data class Settings(
 
     companion object {
         val DEFAULT_DOSES = listOf(
-            DoseTime(7 * 60, "Morning"),
+            DoseTime(7 * 60, "Morning", noScan = true),
             DoseTime(10 * 60 + 30, "Mid-morning"),
             DoseTime(14 * 60 + 30, "Afternoon"),
             DoseTime(18 * 60 + 30, "Evening"),
@@ -229,6 +241,8 @@ data class DoseInstance(
     val delays: Int = 0,
     /** A different set of pills: own sound, own screen colour, possibly its own code. */
     val night: Boolean = false,
+    /** Cleared with one tap instead of a scan. */
+    val noScan: Boolean = false,
 ) {
     val canDelay get() = delays < DoseRecord.MAX_DELAYS
     val isShifted get() = effectiveMillis != scheduledMillis

@@ -39,6 +39,13 @@ class AlarmService : Service() {
         const val DEFAULT_PAUSE_SECONDS = 60
         @Volatile var ringingKey: String? = null
             private set
+
+        /**
+         * Set by the scanner while it is on screen, so it can take itself off again when the alarm
+         * comes back on. A camera viewfinder with an alarm sounding behind it reads as a stuck
+         * screen; the alarm belongs on the alarm screen.
+         */
+        @Volatile var onRingingResumed: (() -> Unit)? = null
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -49,6 +56,8 @@ class AlarmService : Service() {
     private var rampAnchor = 0L
     /** Night pills are a different container, so they get their own sound. */
     private var isNight = false
+    /** This dose is confirmed with a tap, so the notification should not talk about scanning. */
+    private var isNoScan = false
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -84,6 +93,7 @@ class AlarmService : Service() {
         val label = if (isTest) "TEST" else inst?.label ?: store.labelFor(key)
         val time = inst?.let { TimeFmt.hm(it.effectiveMillis) } ?: TimeFmt.hm(System.currentTimeMillis())
         isNight = !isTest && (inst?.night ?: store.isNightKey(key))
+        isNoScan = !isTest && (inst?.noScan ?: store.isNoScanKey(key))
 
         if (!startForegroundWithNotification(key, label, time)) return START_NOT_STICKY
         if (ringingKey != key) {
@@ -118,7 +128,10 @@ class AlarmService : Service() {
         val n = NotificationCompat.Builder(this, Notifications.CH_ALARM)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle("Go and get your $label pills ($time)")
-            .setContentText("Scan the code on the pill container once you have them. The alarm repeats until you do.")
+            .setContentText(
+                if (isNoScan) "Tap Taken on the alarm screen once you have them. The alarm repeats until you do."
+                else "Scan the code on the pill container once you have them. The alarm repeats until you do."
+            )
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -155,6 +168,7 @@ class AlarmService : Service() {
         // Both the handler and the AlarmManager backstop can land on this; only ring once.
         if (player != null) return
         cancelResumeAlarm()
+        runCatching { onRingingResumed?.invoke() }
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         // Held only while a sound is actually playing; stopSound() lets it go.
         if (wakeLock?.isHeld != true) {

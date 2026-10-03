@@ -53,7 +53,7 @@ object Diary {
                                 else -> " (on time)"
                             }
                         )
-                        if (d.method == "override") line.append(" — carer override")
+                        if (d.method != Methods.SCAN) line.append(" — ${Methods.describe(d.method)}")
                     }
                     DoseStatus.MISSED -> line.append("MISSED")
                     DoseStatus.PENDING -> line.append(if (d.effectiveMillis <= now) "DUE NOW" else "not yet due")

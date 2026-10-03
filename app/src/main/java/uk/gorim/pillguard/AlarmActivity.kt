@@ -22,6 +22,8 @@ class AlarmActivity : AppCompatActivity() {
     private var screenOff: Runnable? = null
     /** The dose time, kept so it can go back in place when the "Take pills now" spell is over. */
     private var timeText: String = ""
+    /** This slot is cleared with one tap instead of the container's code. */
+    private var noScan = false
 
     companion object {
         /** Seconds the "yes" is held before it can be pressed. */
@@ -38,7 +40,7 @@ class AlarmActivity : AppCompatActivity() {
             result.contents == null -> Unit // cancelled; keep ringing
             // A night dose wants the night container's code, if a separate one has been set up.
             if (test) store.matchesAnyQr(result.contents) else store.matchesQrFor(k, result.contents) ->
-                confirm(k, "scan")
+                confirm(k, Methods.SCAN)
             store.matchesAnyQr(result.contents) -> {
                 store.log("${store.labelFor(k)} dose: wrong container scanned")
                 Ui.toast(
@@ -76,6 +78,8 @@ class AlarmActivity : AppCompatActivity() {
         setContentView(R.layout.activity_alarm)
 
         findViewById<Button>(R.id.btnTaking).setOnClickListener {
+            // A no-scan slot is confirmed where he is standing; no camera, no second step.
+            if (noScan) { key?.let { k -> confirm(k, Methods.TAP) }; return@setOnClickListener }
             reprieve()
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
                 scanLauncher.launch(Ui.scanOptions(scanPrompt()))
@@ -91,7 +95,7 @@ class AlarmActivity : AppCompatActivity() {
         }
         findViewById<android.widget.ImageButton>(R.id.btnDelay).setOnClickListener { confirmDelay() }
         findViewById<Button>(R.id.btnOverride).setOnClickListener {
-            Ui.askPin(this, "Carer override — enter PIN") { key?.let { k -> confirm(k, "override") } }
+            Ui.askPin(this, "Carer override — enter PIN") { key?.let { k -> confirm(k, Methods.OVERRIDE) } }
         }
         bind(intent)
     }
@@ -121,6 +125,7 @@ class AlarmActivity : AppCompatActivity() {
         key = intent?.getStringExtra(AlarmScheduler.EXTRA_KEY) ?: store.ringingKey
         val k = key
         if (k == AlarmScheduler.TEST_KEY) {
+            noScan = false
             timeText = TimeFmt.hm(System.currentTimeMillis())
             findViewById<TextView>(R.id.alarmTime).text = timeText
             // The triangle stays: a test you cannot rehearse the delay on is not much of a test.
@@ -131,6 +136,7 @@ class AlarmActivity : AppCompatActivity() {
         if (k == null || inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
         timeText = TimeFmt.hm(inst.effectiveMillis)
         findViewById<TextView>(R.id.alarmTime).text = timeText
+        noScan = inst.noScan
         applyNightTint(inst.night)
         if (store.snoozeUntil > System.currentTimeMillis()) showQuietCountdown(store.snoozeUntil)
         else if (quietTick == null) endQuietCountdown()
@@ -148,9 +154,12 @@ class AlarmActivity : AppCompatActivity() {
         if (k == AlarmScheduler.TEST_KEY) return
         val inst = Store.get(this).engine().window(System.currentTimeMillis()).firstOrNull { it.key == k }
         if (inst == null || inst.status != DoseStatus.PENDING) { finish(); return }
-        // Pick the countdown back up if it was stopped while the screen was off.
+        // Pick the countdown back up if it was stopped while the screen was off — and if it ran
+        // out meanwhile (the alarm is ringing again), put the screen back the way it rings.
         val until = Store.get(this).snoozeUntil
-        if (until > System.currentTimeMillis() && quietTick == null) showQuietCountdown(until)
+        if (quietTick == null) {
+            if (until > System.currentTimeMillis()) showQuietCountdown(until) else endQuietCountdown()
+        }
     }
 
     override fun onStop() {
@@ -204,7 +213,7 @@ class AlarmActivity : AppCompatActivity() {
         val time = findViewById<TextView>(R.id.alarmTime)
         time.text = timeText
         time.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 88f)
-        findViewById<Button>(R.id.btnTaking).text = "Scan"
+        findViewById<Button>(R.id.btnTaking).text = takingLabel()
         val going = findViewById<Button>(R.id.btnGoing)
         going.isEnabled = true
         going.backgroundTintList =
@@ -212,6 +221,9 @@ class AlarmActivity : AppCompatActivity() {
         going.setTextColor(ContextCompat.getColor(this, R.color.btn_primary_text))
         going.text = "Get pill"
     }
+
+    /** "Scan" where the container's code is required, "Taken" where a tap is enough. */
+    private fun takingLabel() = if (noScan) "Taken" else "Scan"
 
     /**
      * Same screen, different tint: violet for the night pills. The word "Night pills" appears with
@@ -227,7 +239,9 @@ class AlarmActivity : AppCompatActivity() {
             if (night) android.view.View.VISIBLE else android.view.View.GONE
         // The Scan button is white; its text picks up the screen's colour so the pair stays legible.
         val alt = ContextCompat.getColor(this, if (night) R.color.btn_alt_text_night else R.color.btn_alt_text_pill)
-        findViewById<Button>(R.id.btnTaking).setTextColor(alt)
+        val taking = findViewById<Button>(R.id.btnTaking)
+        taking.setTextColor(alt)
+        if (quietTick == null) taking.text = takingLabel()
         findViewById<Button>(R.id.btnDelayNo).setTextColor(alt)
     }
 
@@ -342,7 +356,7 @@ class AlarmActivity : AppCompatActivity() {
         val store = Store.get(this)
         if (k == AlarmScheduler.TEST_KEY) {
             startService(Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP))
-            Ui.toast(this, "Test alarm cleared (${if (method == "scan") "QR scanned" else "PIN"}).")
+            Ui.toast(this, "Test alarm cleared (${Methods.describe(method)}).")
             finish(); return
         }
         store.markTaken(k, method)

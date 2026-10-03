@@ -105,7 +105,7 @@ object Alerts {
         }
         send(
             ctx, "$label medication taken",
-            "${TimeFmt.hm(r.takenAt)} — $timing (${if (method == "scan") "QR scanned" else "carer override"}).",
+            "${TimeFmt.hm(r.takenAt)} — $timing (${Methods.describe(method)}).",
             priority = if (r.alerted) 3 else 2,
         )
     }

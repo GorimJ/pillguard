@@ -84,6 +84,21 @@ class Store private constructor(ctx: Context) {
             }
             prefs.edit().putBoolean("mig_nightdose", true).apply()
         }
+        // The first dose of the day is taken with his carer beside him and the pills already to
+        // hand, and scanning is hardest first thing. One tap clears it instead.
+        if (!prefs.getBoolean("mig_noscanfirst", false)) {
+            val s = settings
+            if (s.doseTimes.none { it.noScan }) {
+                val first = s.doseTimes.minByOrNull { it.minuteOfDay }
+                if (first != null) {
+                    settings = s.copy(doseTimes = s.doseTimes.map {
+                        if (it === first) it.copy(noScan = true) else it
+                    })
+                    log("${first.label} dose no longer needs a scan")
+                }
+            }
+            prefs.edit().putBoolean("mig_noscanfirst", true).apply()
+        }
     }
 
     val qrPayload: String get() = QR_PREFIX + settings.qrSecret
@@ -102,6 +117,12 @@ class Store private constructor(ctx: Context) {
     fun isNightKey(key: String?): Boolean {
         val idx = key?.substringAfter('#')?.toIntOrNull() ?: return false
         return settings.doseTimes.getOrNull(idx)?.night == true
+    }
+
+    /** True if [key] is a dose that is confirmed with a tap rather than a scan. */
+    fun isNoScanKey(key: String?): Boolean {
+        val idx = key?.substringAfter('#')?.toIntOrNull() ?: return false
+        return settings.doseTimes.getOrNull(idx)?.noScan == true
     }
 
     /** The code this particular dose expects: the night one for night doses, otherwise the daytime one. */
@@ -312,7 +333,7 @@ class Store private constructor(ctx: Context) {
         updateRecord(key) { it.copy(takenAt = at, method = method, missed = false) }
         if (ringingKey == key) { ringingKey = null; snoozeUntil = 0 }
         val label = labelFor(key)
-        log("$label dose taken (${if (method == "scan") "QR scanned" else "carer override"})", at)
+        log("$label dose taken (${Methods.describe(method)})", at)
     }
 
     /** Undo a confirmation (accidental scan / override): the dose becomes pending again and the alarm re-arms. */

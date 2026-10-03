@@ -297,7 +297,7 @@ class SettingsActivity : AppCompatActivity() {
         if (doses.isEmpty()) { box.addView(TextView(this).apply { text = "No doses today."; textSize = 16f }); return }
         for (d in doses) {
             val status = when (d.status) {
-                DoseStatus.TAKEN -> "taken ${TimeFmt.hm(d.takenAt)}" + (if (d.method == "override") " (override)" else "")
+                DoseStatus.TAKEN -> "taken ${TimeFmt.hm(d.takenAt)}" + (if (d.method == Methods.OVERRIDE) " (override)" else "")
                 DoseStatus.MISSED -> "missed"
                 DoseStatus.PENDING -> if (d.effectiveMillis <= now) "DUE" else "pending"
             }
@@ -421,7 +421,9 @@ class SettingsActivity : AppCompatActivity() {
         doses.forEachIndexed { i, d ->
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             val t = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-                text = "${TimeFmt.minuteOfDay(d.minuteOfDay)}   ${d.label}" + if (d.night) "   · night pills" else ""
+                text = "${TimeFmt.minuteOfDay(d.minuteOfDay)}   ${d.label}" +
+                    (if (d.night) "   · night pills" else "") +
+                    (if (d.noScan) "   · no scan" else "")
                 isAllCaps = false; textSize = 18f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setOnClickListener { editDose(i) }
@@ -443,10 +445,17 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 17f
             isChecked = existing?.night == true
         }
+        // The scan proves he was at the container. Dropping it is a real loosening, so the wording
+        // says what is being given up rather than just what gets easier.
+        val noScanBox = android.widget.CheckBox(this).apply {
+            text = "No scan needed: one tap clears it, with no proof he was at the container"
+            textSize = 17f
+            isChecked = existing?.noScan == true
+        }
         val pad = (24 * resources.displayMetrics.density).toInt()
         val wrap = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad / 2, pad, 0); addView(nameBox); addView(nightBox)
+            setPadding(pad, pad / 2, pad, 0); addView(nameBox); addView(nightBox); addView(noScanBox)
         }
         AlertDialog.Builder(this)
             .setTitle(if (existing == null) "New dose" else "Edit dose")
@@ -454,9 +463,10 @@ class SettingsActivity : AppCompatActivity() {
             .setPositiveButton("Pick time") { _, _ ->
                 val label = nameBox.text.toString().ifBlank { "Dose" }
                 val night = nightBox.isChecked
+                val noScan = noScanBox.isChecked
                 val init = existing?.minuteOfDay ?: (12 * 60)
                 TimePickerDialog(this, { _, h, m ->
-                    val dt = DoseTime(h * 60 + m, label, night)
+                    val dt = DoseTime(h * 60 + m, label, night, noScan)
                     if (index == null) doses.add(dt) else doses[index] = dt
                     renderDoses()
                 }, init / 60, init % 60, true).show()
